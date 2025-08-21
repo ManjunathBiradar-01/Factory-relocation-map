@@ -122,26 +122,19 @@ for _, row in filtered_df.iterrows():
             tooltip="Factory Today"
         ).add_to(m)
 
-if pd.notnull(lat_lead) and pd.notnull(lon_lead):
-    folium.Marker(
-        [lat_lead, lon_lead],
-        popup=folium.Popup(
-            f"<b>Lead Factory:</b> {row.get('Plan Lead Factory','')}<br>"
-            f"<b>Name:</b> {row.get('Name','')}<br>"
-            f"<b>Engine:</b> {row.get('Engine','')}<br>"
-            f"<b>Emission:</b> {row.get('Emission','')}",
-            max_width=300
-        ),
-        icon=folium.DivIcon(html=f"""
-            <div style="background-color:#ffdc43;
-                        border-radius:50%;
-                        width:14px;
-                        height:14px;
-                        border:2px solid #333;"
-            ></div>
-        """),
-        tooltip="Plan Lead Factory"
-    ).add_to(m)
+    if pd.notnull(lat_lead) and pd.notnull(lon_lead):
+        folium.Marker(
+            [lat_lead, lon_lead],
+            popup=folium.Popup(
+                f"<b>Lead Factory:</b> {row.get('Plan Lead Factory','')}<br>"
+                f"<b>Name:</b> {row.get('Name','')}<br>"
+                f"<b>Engine:</b> {row.get('Engine','')}<br>"
+                f"<b>Emission:</b> {row.get('Emission','')}",
+                max_width=300
+            ),
+            icon=folium.Icon(color="red", icon="flag", prefix="fa"),
+            tooltip="Plan Lead Factory"
+        ).add_to(m)
 
 
     if (pd.notnull(lat_today) and pd.notnull(lon_today) and
@@ -150,7 +143,7 @@ if pd.notnull(lat_lead) and pd.notnull(lon_lead):
         vol_txt = f"{vol:.0f}%" if pd.notnull(vol) else "n/a"
         folium.PolyLine(
             [[lat_today, lon_today], [lat_lead, lon_lead]],
-            color="0052a0", weight=3, opacity=0.7,
+            color="green", weight=3, opacity=0.7,
             tooltip=f"Volume Lead Plant: {vol_txt}"
         ).add_to(m)
 
@@ -166,6 +159,7 @@ with st.expander("Show filtered data"):
              "Lat_today","Lon_today","Lat_lead","Lon_lead"]
         ].reset_index(drop=True)
     )
+
 
 
 
