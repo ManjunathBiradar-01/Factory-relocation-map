@@ -197,41 +197,15 @@ m.get_root().header.add_child(JavascriptLink(
 from folium.plugins import AntPath
 
 
-# After: m = folium.Map(...)
+# Put near your other Streamlit controls
+font_size = st.slider("Tooltip/Popup font size (px)", min_value=12, max_value=28, value=16, step=1)
 
+# Then inject CSS using the selected value
 from folium import Element
-
-# You can even parameterize this via a Streamlit slider (see Option C)
-FONT_SIZE_PX = 16  # try 16–18 for desktop, maybe 18–20 for presentations
-
 css = f"""
 <style>
-  /* All Leaflet tooltips */
-  .leaflet-tooltip {{
-    font-size: {FONT_SIZE_PX}px;
-    font-weight: 600;        /* optional */
-    color: #111;             /* tweak for dark/light themes */
-  }}
-
-  /* All popup content */
-  .leaflet-popup-content {{
-    font-size: {FONT_SIZE_PX}px;
-    line-height: 1.35;
-    color: #111;             /* tweak for dark/light themes */
-  }}
-
-  /* Optional: make popup wrapper spacing a bit roomier */
-  .leaflet-popup-content-wrapper {{
-    padding: 8px 12px;
-  }}
-
-  /* Optional: bump sizes on small screens */
-  @media (max-width: 768px) {{
-    .leaflet-tooltip,
-    .leaflet-popup-content {{
-      font-size: {FONT_SIZE_PX + 2}px;
-    }}
-  }}
+  .leaflet-tooltip {{ font-size: {font_size}px; font-weight: 600; color:#111; }}
+  .leaflet-popup-content {{ font-size: {font_size}px; line-height:1.35; color:#111; }}
 </style>
 """
 m.get_root().header.add_child(Element(css))
@@ -376,6 +350,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
