@@ -4,18 +4,8 @@ import folium
 import streamlit as st
 
 # ---------- Settings ----------
-
-# Sidebar controls for customization
-st.sidebar.header("Map Customization")
-font_size = st.sidebar.slider("Font Size (px)", 10, 30, 16)
-font_weight = st.sidebar.selectbox("Font Weight", ["normal", "bold", "600"])
-font_color = st.sidebar.color_picker("Font Color", value="#111111")
-animation_delay = st.sidebar.slider("Animation Speed (ms)", 100, 2000, 800, step=100)
-map_theme = st.sidebar.selectbox("Map Theme", ["OpenStreetMap", "Stamen Terrain", "Stamen Toner", "CartoDB positron", "CartoDB dark_matter"])
-
-
 st.set_page_config(
-    page_title="Bomag SDMs Factory Production Relocation Dashboard",
+    page_title="Bomag Factory Relocation Dashboard",
     layout="wide"
 )
 
@@ -193,7 +183,7 @@ if coords:
 else:
     center_lat, center_lon = 20.0, 0.0  # global fallback
 
-m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles=map_theme)
+m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
 
 # Load Leaflet arrowheads plugin (JS) once per map
 from folium import JavascriptLink, Element
@@ -212,22 +202,22 @@ from folium.plugins import AntPath
 from folium import Element
 
 # You can even parameterize this via a Streamlit slider (see Option C)
-FONT_SIZE_PX = font_size  # try 16–18 for desktop, maybe 18–20 for presentations
+FONT_SIZE_PX = 16  # try 16–18 for desktop, maybe 18–20 for presentations
 
 css = f"""
 <style>
   /* All Leaflet tooltips */
   .leaflet-tooltip {{
     font-size: {FONT_SIZE_PX}px;
-    font-weight: {font_weight};        /* optional */
-    color: {font_color};             /* tweak for dark/light themes */
+    font-weight: 600;        /* optional */
+    color: #111;             /* tweak for dark/light themes */
   }}
 
   /* All popup content */
   .leaflet-popup-content {{
     font-size: {FONT_SIZE_PX}px;
     line-height: 1.35;
-    color: {font_color};             /* tweak for dark/light themes */
+    color: #111;             /* tweak for dark/light themes */
   }}
 
   /* Optional: make popup wrapper spacing a bit roomier */
@@ -312,7 +302,7 @@ for _, row in filtered_df.iterrows():
             weight=5,
             opacity=0.9,
             dash_array=[10, 20],      # pattern of dash/space
-            delay=animation_delay,                # smaller is faster
+            delay=800,                # smaller is faster
             pulse_color="#ffd166",    # glow color
             paused=False,
             reverse=False,
@@ -386,6 +376,10 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
+
+
+
 
 
 
