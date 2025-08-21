@@ -194,14 +194,13 @@ for _, row in filtered_df.iterrows():
     if sales_region_col and pd.notnull(row.get(sales_region_col, None)):
         sales_region_line = f"<br><b>Sales Region:</b> {row.get(sales_region_col, '')}"
 
-    # Factory Today marker with LOCATION + "Open in Maps" link
+    # --------- Markers ---------
+    # Factory Today marker
     if pd.notnull(lat_today) and pd.notnull(lon_today):
-        loc_str_today = format_coords(lat_today, lon_today)
-        maps_link_today = f"https://www.google.com/maps?q={lat_today},{lon_today}"
         folium.Marker(
             [lat_today, lon_today],
             popup=folium.Popup(
-                f"<b>Factory Today:</b> {row.get('Factory today','')}<br>"
+                f"<b>Factory Today:</b> {row.get('Factory today','')}"
                 f"{sales_region_line}",
                 max_width=320
             ),
@@ -209,65 +208,59 @@ for _, row in filtered_df.iterrows():
             tooltip="Factory Today"
         ).add_to(m)
 
-    # Lead Factory marker with location (bonus)
+    # Lead Factory marker
     if pd.notnull(lat_lead) and pd.notnull(lon_lead):
-        loc_str_lead = format_coords(lat_lead, lon_lead)
-        maps_link_lead = f"https://www.google.com/maps?q={lat_lead},{lon_lead}"
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>Factory Today:</b> {row.get('Factory Today','')}<br>"
+                f"<b>Lead Factory:</b> {row.get('Plan Lead Factory','')}"
                 f"{sales_region_line}",
                 max_width=320
             ),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
-            tooltip="Factory Today"
+            tooltip="Plan Lead Factory"
         ).add_to(m)
 
-    # Flow line with volume tooltip
+    # --------- Flow line with hover + click details ---------
     if (pd.notnull(lat_today) and pd.notnull(lon_today) and
         pd.notnull(lat_lead) and pd.notnull(lon_lead)):
-        vol = row.get("Volume Lead Plant (%)")
-        vol_txt = f"{vol:.0f}%" if pd.notnull(vol) else "n/a"
-        folium.PolyLine(
-            [[lat_today, lon_today], [lat_lead, lon_lead]],
-            color="green", weight=3, opacity=0.7,
-            tooltip=f"Volume Lead Plant: {vol_txt}"
-        ).add_to(m)
 
-# ---------- Render ----------
-st.subheader("Production Relocation Map")
-st.components.v1.html(m._repr_html_(), height=600)
+        # Robust volume text formatting
+        vol_raw = row.get("Volume Lead Plant (%)")
+        vol_num = None
+        if pd.notnull(vol_raw):
+            try:
+                vol_num = float(vol_raw)
+            except Exception:
+                vol_num = None
+        vol_txt = f"{vol_num:.0f}%" if vol_num is not None else (str(vol_raw) if pd.notnull(vol_raw) else "n/a")
 
-# Add location columns to the table view
-filtered_df = filtered_df.copy()
-filtered_df["Factory Today Location"] = filtered_df.apply(
-    lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1
-)
-filtered_df["Lead Factory Location"] = filtered_df.apply(
-    lambda r: format_coords(r["Lat_lead"], r["Lon_lead"]), axis=1
-)
+        # (Optional) scale line thickness by volume %; keep constant 3 if you don't want scaling
+        weight = 3
+        if vol_num is not None:
+            weight = max(2, min(10, 3 + vol_num / 10.0))  # e.g., 30% -> ~6 weight
 
-with st.expander("Show filtered data"):
-    cols_to_show = [
-        "FM","Name",
-        # Insert Sales Region after Name if present
-    ]
-    if sales_region_col:
-        cols_to_show.append(sales_region_col)
-    cols_to_show += [
-        "Emission","Engine","Factory today",
-        "Factory Today Location",  # <--- added
-        "Plan Lead Factory",
-        "Lead Factory Location",   # <--- added
-        "Volume Lead Plant (%)",
-        "Lat_today","Lon_today","Lat_lead","Lon_lead"
-    ]
+        # Create the line with a hover tooltip
+        line = folium.PolyLine(
+            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
+            color="green",
+            weight=weight,
+            opacity=0.7,
+            tooltip=f"Volume Lead Plant: {vol_txt} (click for details)"
+        )
 
-    # Only keep columns that actually exist (robust)
-    cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
+        # Add a click popup with detailed info
+        popup_html = (
+            f"<b>Flow:</b> {row.get('Factory today','')} → {row.get('Plan Lead Factory','')}<br>"
+            f"<b>Machine:</b> {row.get('Name','')} (FM: {row.get('FM','')})<br>"
+            f"<b>Engine / Emission:</b> {row.get('Engine','')} / {row.get('Emission','')}<br>"
+            f"<b>Volume Lead Plant:</b> {vol_txt}"
+            f"{sales_region_line}"
+        )
+        folium.Popup(popup_html, max_width=340).add_to(line)
 
-    st.dataframe(filtered_df[cols_to_show].reset_index(drop=True))
+        # Add the line to the map
+        line.add_to(m)
 
 
 
