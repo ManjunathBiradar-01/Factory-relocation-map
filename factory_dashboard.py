@@ -88,7 +88,16 @@ def find_sales_region_col(columns):
         cl = c.lower()
         if "sales" in cl and "region" in cl:
             return c
+
     return None
+
+
+# ---------- Small utility: format coordinates ----------
+def format_coords(lat, lon, decimals: int = 5) -> str:
+    """Return a friendly 'lat, lon' string or 'n/a' if missing."""
+    if pd.notnull(lat) and pd.notnull(lon):
+        return f"{lat:.{decimals}f}, {lon:.{decimals}f}"
+    return "n/a"
 
 
 # ---------- Path & load ----------
@@ -180,44 +189,54 @@ for _, row in filtered_df.iterrows():
     lat_today, lon_today = row["Lat_today"], row["Lon_today"]
     lat_lead,  lon_lead  = row["Lat_lead"],  row["Lon_lead"]
 
-    # Compose optional Sales Region line for popup
+    # Optional Sales Region line for popup
     sales_region_line = ""
     if sales_region_col and pd.notnull(row.get(sales_region_col, None)):
         sales_region_line = f"<br><b>Sales Region:</b> {row.get(sales_region_col, '')}"
 
+    # Factory Today marker with LOCATION + "Open in Maps" link
     if pd.notnull(lat_today) and pd.notnull(lon_today):
+        loc_str_today = format_coords(lat_today, lon_today)
+        maps_link_today = f"https://www.google.com/maps?q={lat_today},{lon_today}"
         folium.Marker(
             [lat_today, lon_today],
             popup=folium.Popup(
                 f"<b>Factory Today:</b> {row.get('Factory today','')}<br>"
+                f"<b>Location:</b> {loc_str_today} "
+                f"(<a href='{maps_link_today}' target='_blank' rel='noopener'>Open in Maps</a>)<br>"
                 f"<b>Name:</b> {row.get('Name','')}<br>"
                 f"<b>Machine Code (FM):</b> {row.get('FM','')}<br>"
                 f"<b>Engine:</b> {row.get('Engine','')}<br>"
                 f"<b>Emission:</b> {row.get('Emission','')}"
                 f"{sales_region_line}",
-                max_width=300
+                max_width=320
             ),
             icon=folium.Icon(color="red", icon="industry", prefix="fa"),
             tooltip="Factory Today"
         ).add_to(m)
 
+    # Lead Factory marker with location (bonus)
     if pd.notnull(lat_lead) and pd.notnull(lon_lead):
+        loc_str_lead = format_coords(lat_lead, lon_lead)
+        maps_link_lead = f"https://www.google.com/maps?q={lat_lead},{lon_lead}"
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
                 f"<b>Lead Factory:</b> {row.get('Plan Lead Factory','')}<br>"
+                f"<b>Location:</b> {loc_str_lead} "
+                f"(<a href='{maps_link_lead}' target='_blank' rel='noopener'>Open in Maps</a>)<br>"
                 f"<b>Name:</b> {row.get('Name','')}<br>"
                 f"<b>Machine Code (FM):</b> {row.get('FM','')}<br>"
                 f"<b>Engine:</b> {row.get('Engine','')}<br>"
                 f"<b>Emission:</b> {row.get('Emission','')}"
                 f"{sales_region_line}",
-                max_width=300
+                max_width=320
             ),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
             tooltip="Plan Lead Factory"
         ).add_to(m)
 
-    # Draw flow line with volume tooltip
+    # Flow line with volume tooltip
     if (pd.notnull(lat_today) and pd.notnull(lon_today) and
         pd.notnull(lat_lead) and pd.notnull(lon_lead)):
         vol = row.get("Volume Lead Plant (%)")
@@ -232,21 +251,37 @@ for _, row in filtered_df.iterrows():
 st.subheader("Production Relocation Map")
 st.components.v1.html(m._repr_html_(), height=600)
 
+# Add location columns to the table view
+filtered_df = filtered_df.copy()
+filtered_df["Factory Today Location"] = filtered_df.apply(
+    lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1
+)
+filtered_df["Lead Factory Location"] = filtered_df.apply(
+    lambda r: format_coords(r["Lat_lead"], r["Lon_lead"]), axis=1
+)
+
 with st.expander("Show filtered data"):
     cols_to_show = [
-        "FM","Name","Emission","Engine","Factory today",
-        "Plan Lead Factory","Volume Lead Plant (%)",
+        "FM","Name",
+        # Insert Sales Region after Name if present
+    ]
+    if sales_region_col:
+        cols_to_show.append(sales_region_col)
+    cols_to_show += [
+        "Emission","Engine","Factory today",
+        "Factory Today Location",  # <--- added
+        "Plan Lead Factory",
+        "Lead Factory Location",   # <--- added
+        "Volume Lead Plant (%)",
         "Lat_today","Lon_today","Lat_lead","Lon_lead"
     ]
-    # Insert Sales Region after Name if found
-    if sales_region_col and sales_region_col not in cols_to_show:
-        insert_at = 2  # after FM and Name
-        cols_to_show.insert(insert_at, sales_region_col)
 
-    # Only keep columns that actually exist (robust to sheet variations)
+    # Only keep columns that actually exist (robust)
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True))
+e))
+
 
 
 
