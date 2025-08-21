@@ -171,23 +171,6 @@ if sales_region_col and sales_region_filter:
     filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
 
-# ===== Display & Animation Controls (SIDEBAR) =====
-with st.sidebar:
-    st.header("Display & Animation")
-
-    font_size = st.slider(
-        "Tooltip/Popup font size (px)", min_value=12, max_value=28, value=16, step=1
-    )
-
-    delay_ms = st.slider(
-        "Arrow animation delay (ms — lower = faster)",
-        min_value=100, max_value=2000, value=800, step=50
-    )
-
-    animate = st.checkbox("Animate paths", value=True)
-
-
-
 # ---------- Map centering ----------
 coords = []
 if not filtered_df.empty:
@@ -212,6 +195,49 @@ m.get_root().header.add_child(JavascriptLink(
 
 
 from folium.plugins import AntPath
+
+
+# After: m = folium.Map(...)
+
+from folium import Element
+
+# You can even parameterize this via a Streamlit slider (see Option C)
+FONT_SIZE_PX = 16  # try 16–18 for desktop, maybe 18–20 for presentations
+
+css = f"""
+<style>
+  /* All Leaflet tooltips */
+  .leaflet-tooltip {{
+    font-size: {FONT_SIZE_PX}px;
+    font-weight: 600;        /* optional */
+    color: #111;             /* tweak for dark/light themes */
+  }}
+
+  /* All popup content */
+  .leaflet-popup-content {{
+    font-size: {FONT_SIZE_PX}px;
+    line-height: 1.35;
+    color: #111;             /* tweak for dark/light themes */
+  }}
+
+  /* Optional: make popup wrapper spacing a bit roomier */
+  .leaflet-popup-content-wrapper {{
+    padding: 8px 12px;
+  }}
+
+  /* Optional: bump sizes on small screens */
+  @media (max-width: 768px) {{
+    .leaflet-tooltip,
+    .leaflet-popup-content {{
+      font-size: {FONT_SIZE_PX + 2}px;
+    }}
+  }}
+</style>
+"""
+m.get_root().header.add_child(Element(css))
+
+
+
 
 # --- Plot markers & flows (animated arrow) ---
 bounds = []  # collect endpoints for fit_bounds
@@ -350,6 +376,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
