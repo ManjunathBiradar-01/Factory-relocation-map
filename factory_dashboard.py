@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import folium
@@ -157,4 +158,5 @@ with st.expander("Show filtered data"):
              "Lat_today","Lon_today","Lat_lead","Lon_lead"]
         ].reset_index(drop=True)
     )
+
 
