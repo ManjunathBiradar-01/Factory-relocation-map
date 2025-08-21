@@ -170,6 +170,24 @@ if emission_filter:
 if sales_region_col and sales_region_filter:
     filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
+
+# ===== Display & Animation Controls (SIDEBAR) =====
+with st.sidebar:
+    st.header("Display & Animation")
+
+    font_size = st.slider(
+        "Tooltip/Popup font size (px)", min_value=12, max_value=28, value=16, step=1
+    )
+
+    delay_ms = st.slider(
+        "Arrow animation delay (ms — lower = faster)",
+        min_value=100, max_value=2000, value=800, step=50
+    )
+
+    animate = st.checkbox("Animate paths", value=True)
+
+
+
 # ---------- Map centering ----------
 coords = []
 if not filtered_df.empty:
@@ -332,6 +350,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
