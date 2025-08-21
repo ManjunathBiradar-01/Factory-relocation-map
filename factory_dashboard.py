@@ -57,7 +57,7 @@ def load_data(path: str) -> pd.DataFrame:
     return merged
 
 # ---------- Path & load ----------
-excel_path = "Footprint_SDR.xlsx
+excel_path = "Footprint_SDR.xlsx"
 df = load_data(excel_path)
 
 # ---------- UI ----------
@@ -158,6 +158,7 @@ with st.expander("Show filtered data"):
              "Lat_today","Lon_today","Lat_lead","Lon_lead"]
         ].reset_index(drop=True)
     )
+
 
 
 
