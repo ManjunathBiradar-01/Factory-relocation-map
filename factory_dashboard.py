@@ -6,7 +6,7 @@ import streamlit as st
 
 
 # ---------- Settings ----------
-st.set_page_config(page_title="Factory Production Relocation Dashboard", layout="wide")
+st.set_page_config(page_title="Bomag SDMs Factory Production Relocation Dashboard", layout="wide")
 
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
@@ -159,6 +159,7 @@ with st.expander("Show filtered data"):
              "Lat_today","Lon_today","Lat_lead","Lon_lead"]
         ].reset_index(drop=True)
     )
+
 
 
 
