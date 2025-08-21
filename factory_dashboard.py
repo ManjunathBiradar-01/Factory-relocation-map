@@ -216,7 +216,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>Lead Factory:</b> {row.get('Plan Lead Factory','')}<br>"
+                f"<b>Factory Today:</b> {row.get('Factory Today','')}<br>"
                 f"{sales_region_line}",
                 max_width=320
             ),
@@ -268,6 +268,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True))
+
 
 
 
