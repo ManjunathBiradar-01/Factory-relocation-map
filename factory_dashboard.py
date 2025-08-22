@@ -43,7 +43,7 @@ def load_data(xlsx_file) -> pd.DataFrame:
     df_from = read_sheet_any(xlsx_file, ["From"])
     df_to   = read_sheet_any(xlsx_file, ["To"])
     # Try to locate the sub sheet with flexible names
-    df_sub  = read_sheet_any(xlsx_file, ["Sub", "Sub Factory", "SubFactory", "Sub-Factories", "SubFactories"])
+    df_sub  = read_sheet_any(xlsx_file, ["Sub-Factory"])
 
     # Normalize column names
     for d in (df_from, df_to, df_sub):
@@ -369,6 +369,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
