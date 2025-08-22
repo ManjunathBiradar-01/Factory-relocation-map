@@ -304,6 +304,8 @@ from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", 
 lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
 # Line data
+
+pdk.Layer(
 "IconLayer",
 data=arrow_df,
 get_icon="icon_data",
@@ -312,7 +314,7 @@ size_scale=15,
 get_position="[lon, lat]",
 get_color=[255, 0, 0],
 pickable=True,
-
+)
 
 
 lead_to_sub_lines = [
@@ -403,6 +405,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
