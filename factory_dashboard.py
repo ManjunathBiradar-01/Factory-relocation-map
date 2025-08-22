@@ -107,6 +107,7 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
 
 # --- File Upload ---
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
+
 if uploaded_file is not None:
     try:
         df = load_data(uploaded_file)
@@ -116,18 +117,18 @@ if uploaded_file is not None:
 else:
     try:
         df = load_data("https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx")
-
     except Exception as e:
         st.error(f"Failed to load default file from GitHub. {e}")
         st.stop()
 
-
-        st.error(f"Failed to load data.\n\n{e}")
-        st.stop()
-
-
-# --- Add tabs for Dashboard and Editing ---
+# --- Tabs ---
 tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
+
+with tab1:
+    st.title("Factory Production Relocation Dashboard")
+
+    # All your dashboard logic goes here
+    # Define machine_code_filter, etc. inside this block
 
 with tab2:
     st.subheader("Edit Full Dataset")
@@ -144,6 +145,7 @@ with tab2:
             file_name="updated_factory_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
 
 
 with tab1:
@@ -453,6 +455,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
