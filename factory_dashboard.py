@@ -281,89 +281,66 @@ with tab1:
     st.subheader("Volume Flow (From → Lead → Sub)")
 
 
-import streamlit as st
-import pandas as pd
 import pydeck as pdk
+import pandas as pd
 
-st.set_page_config(layout="wide")
-st.title("Factory Relocation Flow Map")
+# Use a standard location pin icon from Wikimedia
+icon_data = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",  # You can replace this with a pin icon
+    "width": 128,
+    "height": 128,
+    "anchorY": 128
+}
 
-# ---- Assume filtered_df is already defined ----
-# Replace this with your actual data loading logic
-# For example:
-# filtered_df = load_data(...)
+# Add icon data to each marker
+markers["icon_data"] = [icon_data for _ in range(len(markers))]
 
-# ---- Tabs ----
-tab1, tab2 = st.tabs(["📍 Map View", "📝 Edit Dataset"])
-
-with tab1:
-    st.subheader("Factory Flow Map")
-
-# Combine flow lines and pinpoint markers
-from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"])
-lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
-
-# Line data
-
-pdk.Layer(
-"IconLayer",
-data=arrow_df,
-get_icon="icon_data",
-get_size=4,
-size_scale=15,
-get_position="[lon, lat]",
-get_color=[255, 0, 0],
-pickable=True,
-)
-
-
-lead_to_sub_lines = [
-    {
-        "from_lat": row["Lat_lead"],
-        "from_lon": row["Lon_lead"],
-        "to_lat": row["Lat_sub"],
-        "to_lon": row["Lon_sub"],
-        "label": f"{row['Plan Lead Factory']} → {row['Plan Sub Factory']}"
-    }
-    for _, row in lead_to_sub.iterrows()
-]
-
-lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
-
-# Marker data
-
-pdk.Layer(
-"IconLayer",
-data=markers,
-get_icon="icon_data",
-get_size=4,
-size_scale=15,
-get_position="[lon, lat]",
-get_color=[0, 128, 255],
-pickable=True,
-)
-
-
-# Layers
-line_layer = pdk.Layer(
-    "LineLayer",
-    data=lines_df,
-    get_source_position="[from_lon, from_lat]",
-    get_target_position="[to_lon, to_lat]",
-    get_width=3,
-    get_color=[255, 0, 0],
-    pickable=True,
-    auto_highlight=True
-)
-
+# IconLayer for location markers
 marker_layer = pdk.Layer(
-    "ScatterplotLayer",
+    "IconLayer",
     data=markers,
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
     get_position="[lon, lat]",
-    get_color=[0, 128, 255],
-    get_radius=50000,
     pickable=True
 )
+
+# Prepare trips data for animated arrows
+lines_df["path"] = lines_df.apply(
+    lambda row: [[row["from_lon"], row["from_lat"]], [row["to_lon"], row["to_lat"]]],
+    axis=1
+)
+lines_df["timestamps"] = [[0, 100] for _ in range(len(lines_df))]
+
+# TripsLayer for animated arrows
+arrow_layer = pdk.Layer(
+    "TripsLayer",
+    data=lines_df,
+    get_path="path",
+    get_timestamps="timestamps",
+    get_color=[255, 0, 0],
+    opacity=0.8,
+    width_min_pixels=2,
+    trail_length=180,
+    current_time=50
+)
+
+# Deck setup
+view_state = pdk.ViewState(
+    latitude=markers["lat"].mean(),
+    longitude=markers["lon"].mean(),
+    zoom=5,
+    pitch=45
+)
+
+r = pdk.Deck(
+    layers=[arrow_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{name}"}
+)
+
+r.to_html("animated_map.html")
 
 # View state
 view_state = pdk.ViewState(
@@ -405,6 +382,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
