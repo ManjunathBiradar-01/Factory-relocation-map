@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import folium
 import streamlit as st
+import io
+from datetime import datetime
+
 
 # ---------- Settings ----------
 st.set_page_config(
@@ -386,10 +389,31 @@ with st.expander("Show filtered data"):
         "Lat_today","Lon_today","Lat_lead","Lon_lead"
     ]
 
+# --- Editable Data Section ---
+st.subheader("Edit and Download Updated Data")
+
+with st.expander("Edit Filtered Data"):
+    edited_df = st.data_editor(filtered_df, num_rows="dynamic")
+
+import io
+
+if st.button("Download Updated Excel"):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
+    st.download_button(
+        label="Click to Download",
+        data=output.getvalue(),
+        file_name="updated_factory_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    
     # Only keep columns that actually exist (robust)
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
