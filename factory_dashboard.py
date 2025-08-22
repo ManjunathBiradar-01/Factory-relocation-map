@@ -153,7 +153,6 @@ else:
 
 # --- Tabs ---
 
-with tab1:
     st.title("Factory Production Relocation Dashboard")
 
     sales_region_col = find_sales_region_col(df.columns)
@@ -408,6 +407,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
