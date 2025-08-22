@@ -109,7 +109,7 @@ if uploaded_file is not None:
         df = load_data(uploaded_file)
         st.error(f"Failed to load uploaded file. {e}")
         st.stop()
-else:
+except:
     try:
         df = load_data("https://raw.githubusercontent.com/yourusername/yourrepo/main/Footprint_SDR.xlsx")
         st.error(f"Failed to load default file from GitHub.{e}")
@@ -385,6 +385,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
