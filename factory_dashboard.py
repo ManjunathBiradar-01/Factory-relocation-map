@@ -323,24 +323,64 @@ with tab1:
         t.append(node_index[row["Plan Sub Factory"]])
         v.append(max(0.0, float(row["value"])))
 
-    if len(labels) and len(v) and sum(v) > 0:
-        fig = go.Figure(data=[go.Sankey(
-            arrangement="snap",
-            node=dict(
-                pad=18,
-                thickness=18,
-                line=dict(color="gray", width=0.5),
-                label=labels
-            ),
-            link=dict(
-                source=s,
-                target=t,
-                value=v
-            )
-        )])
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No flow data to display for the current filters.")
+import pydeck as pdk
+
+# Filter out rows with missing coordinates
+from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"])
+lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
+
+# Build line data
+from_to_lead_lines = [
+    {
+        "from_lat": row["Lat_today"],
+        "from_lon": row["Lon_today"],
+        "to_lat": row["Lat_lead"],
+        "to_lon": row["Lon_lead"],
+        "label": f"{row['Factory today']} → {row['Plan Lead Factory']}"
+    }
+    for _, row in from_to_lead.iterrows()
+]
+
+lead_to_sub_lines = [
+    {
+        "from_lat": row["Lat_lead"],
+        "from_lon": row["Lon_lead"],
+        "to_lat": row["Lat_sub"],
+        "to_lon": row["Lon_sub"],
+        "label": f"{row['Plan Lead Factory']} → {row['Plan Sub Factory']}"
+    }
+    for _, row in lead_to_sub.iterrows()
+]
+
+# Combine all lines
+lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
+
+if not lines_df.empty:
+    line_layer = pdk.Layer(
+        "LineLayer",
+        data=lines_df,
+        get_source_position="[from_lon, from_lat]",
+        get_target_position="[to_lon, to_lat]",
+        get_width=3,
+        get_color=[255, 0, 0],
+        pickable=True,
+        auto_highlight=True
+    )
+
+    view_state = pdk.ViewState(
+        latitude=lines_df["from_lat"].mean(),
+        longitude=lines_df["from_lon"].mean(),
+        zoom=2,
+        pitch=0
+    )
+
+    st.pydeck_chart(pdk.Deck(
+        layers=[line_layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{label}"}
+    ))
+else:
+    st.info("No flow data to display on the map for the current filters.")
 
     # ---- Detail table: per FM → Sub row with % ----
     st.subheader("Detailed Flow Table")
@@ -366,6 +406,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
