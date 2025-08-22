@@ -74,7 +74,7 @@ def load_data(xlsx_file) -> pd.DataFrame:
     # ---- Rename coordinates to avoid collisions ----
     df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
     df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead"})
-    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",  "Longitude": "Lon_sub", sub_name_col: "Sub Factory"})
+    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",  "Longitude": "Lon_sub"})
 
     # ---- Detect optional volume columns ----
     # Lead % candidates (in 'To')
@@ -366,6 +366,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
