@@ -348,13 +348,10 @@ with tab1:
             pitch=0
         )
 
-        st.pydeck_chart(pdk.Deck(
-            layers=[line_layer],
-            initial_view_state=view_state,
-            tooltip={"text": "{label}"}
-        ))
-    else:
-        st.info("No flow data to display on the map for the current filters.")
+       
+with open("map_with_lines_and_markers.html", "r") as f:
+    st.components.v1.html(f.read(), height=600)
+
 
     # ---- Detail table: per FM → Sub row with % ----
     st.subheader("Detailed Flow Table")
@@ -379,6 +376,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
