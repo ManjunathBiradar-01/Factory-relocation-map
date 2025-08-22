@@ -121,6 +121,53 @@ else:
         st.error(f"Failed to load default file from GitHub. {e}")
         st.stop()
 
+
+uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
+
+if uploaded_file is not None:
+    try:
+        df = load_data(uploaded_file)
+
+        # Show Edit button below upload
+        if st.button("Edit Dataset"):
+            st.session_state.show_edit_tab = True
+        else:
+            st.session_state.show_edit_tab = False
+
+        # Tabs: Dashboard and Edit
+        tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
+
+        with tab1:
+            if not st.session_state.get("show_edit_tab", False):
+                st.title("Factory Production Relocation Dashboard")
+                # Your dashboard logic here
+
+        with tab2:
+            if st.session_state.get("show_edit_tab", False):
+                st.subheader("Edit Full Dataset")
+                edited_df = st.data_editor(df, num_rows="dynamic")
+
+                import io
+                if st.button("Download Updated Excel File"):
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
+                    st.download_button(
+                        label="Click to Download",
+                        data=output.getvalue(),
+                        file_name="updated_factory_data.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+
+    except Exception as e:
+        st.error(f"Failed to load data.\n\n{e}")
+        st.stop()
+else:
+    st.info("Please upload an Excel file to begin.")
+
+
+
+
 # --- Tabs ---
 tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
 
@@ -455,6 +502,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
