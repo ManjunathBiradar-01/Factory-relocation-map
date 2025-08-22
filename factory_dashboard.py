@@ -304,16 +304,18 @@ from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", 
 lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
 # Line data
-from_to_lead_lines = [
-    {
-        "from_lat": row["Lat_today"],
-        "from_lon": row["Lon_today"],
-        "to_lat": row["Lat_lead"],
-        "to_lon": row["Lon_lead"],
-        "label": f"{row['Factory today']} → {row['Plan Lead Factory']}"
-    }
-    for _, row in from_to_lead.iterrows()
-]
+
+
+    "IconLayer",
+    data=arrow_df,
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
+    get_position="[lon, lat]",
+    get_color=[255, 0, 0],
+    pickable=True,
+)
+
 
 lead_to_sub_lines = [
     {
@@ -329,16 +331,18 @@ lead_to_sub_lines = [
 lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
 
 # Marker data
-markers = pd.DataFrame([
-    {"lat": row["Lat_today"], "lon": row["Lon_today"], "label": f"Today: {row['Factory today']}"}
-    for _, row in filtered_df.iterrows()
-] + [
-    {"lat": row["Lat_lead"], "lon": row["Lon_lead"], "label": f"Lead: {row['Plan Lead Factory']}"}
-    for _, row in filtered_df.iterrows()
-] + [
-    {"lat": row["Lat_sub"], "lon": row["Lon_sub"], "label": f"Sub: {row['Plan Sub Factory']}"}
-    for _, row in filtered_df.iterrows()
-])
+
+pdk.Layer(
+    "IconLayer",
+    data=markers,
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
+    get_position="[lon, lat]",
+    get_color=[0, 128, 255],
+    pickable=True,
+)
+
 
 # Layers
 line_layer = pdk.Layer(
@@ -401,6 +405,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
