@@ -169,7 +169,7 @@ with tab1:
     if sales_region_col and sales_region_filter:
         filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
-    st.dataframe(filtered_df)
+    #st.dataframe(filtered_df)
 
 with tab2:
     st.subheader("Edit Full Dataset")
@@ -394,6 +394,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
