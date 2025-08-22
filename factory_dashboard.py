@@ -110,10 +110,6 @@ import pandas as pd
 import io
 
 # --- Helper Functions ---
-@st.cache_data(show_spinner=False)
-def load_data(path):
-    return pd.read_excel(path, engine="openpyxl")
-
 def find_sales_region_col(columns):
     possible_names = ['Sales Region', 'Main Sales Region', 'MainSales Region', 'SalesRegion']
     for name in possible_names:
@@ -398,6 +394,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
