@@ -199,6 +199,18 @@ else:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
+    
+edit_mode = st.sidebar.button("Edit Dataset")
+
+if edit_mode:
+    if df is not None and not df.empty:
+        st.subheader("Edit Full Dataset")
+        edited_df = st.data_editor(df, num_rows="dynamic")
+        ...
+    else:
+        st.warning("No data available to edit.")
+
+
 
 
 # ---------- Map centering ----------
@@ -407,6 +419,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
