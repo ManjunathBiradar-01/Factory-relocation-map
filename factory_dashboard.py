@@ -110,6 +110,10 @@ import pandas as pd
 import io
 
 # --- Helper Functions ---
+@st.cache_data(show_spinner=False)
+def load_data(path):
+    return pd.read_excel(path, engine="openpyxl")
+
 def find_sales_region_col(columns):
     possible_names = ['Sales Region', 'Main Sales Region', 'MainSales Region', 'SalesRegion']
     for name in possible_names:
@@ -119,6 +123,20 @@ def find_sales_region_col(columns):
 
 # --- File Upload ---
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
+edit_mode = st.sidebar.button("Edit Dataset")
+if edit_mode:
+    st.subheader("Edit Full Dataset")
+    edited_df = st.data_editor(df, num_rows="dynamic")
+    if st.button("Download Updated Excel File"):
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
+        st.download_button(
+            label="Click to Download",
+            data=output.getvalue(),
+            file_name="updated_factory_data.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 if uploaded_file is not None:
     try:
@@ -134,7 +152,6 @@ else:
         st.stop()
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
 
 with tab1:
     st.title("Factory Production Relocation Dashboard")
@@ -169,11 +186,8 @@ with tab1:
     if sales_region_col and sales_region_filter:
         filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
-    #st.dataframe(filtered_df)
+    st.dataframe(filtered_df)
 
-with tab2:
-    st.subheader("Edit Full Dataset")
-    edited_df = st.data_editor(df, num_rows="dynamic")
 
     if st.button("Download Updated Excel File"):
         output = io.BytesIO()
