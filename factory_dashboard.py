@@ -292,11 +292,11 @@ for _, row in filtered_df.iterrows():
         pd.notnull(lat_lead)  and pd.notnull(lon_lead)):
 
     # Volume formatting
-    vol_raw = row.get("Volume Lead Plant (%)")
-    try:
-        vol_num = float(vol_raw) if pd.notnull(vol_raw) else None
-    except Exception:
-        vol_num = None
+        vol_raw = row.get("Volume Lead Plant (%)")
+        try:
+            vol_num = float(vol_raw) if pd.notnull(vol_raw) else None
+        except Exception:
+            vol_num = None
 
 vol_txt = f"{vol_num:.0f}%" if vol_num is not None else ("n/a" if pd.isna(vol_raw) else str(vol_raw))
 
@@ -391,6 +391,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
