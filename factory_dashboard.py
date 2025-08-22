@@ -105,6 +105,21 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
 
 # ---------- Path & load ----------
 
+import streamlit as st
+import pandas as pd
+import io
+
+# --- Helper Functions ---
+def load_data(file):
+    return pd.read_excel(file)
+
+def find_sales_region_col(columns):
+    possible_names = ['Sales Region', 'Main Sales Region', 'MainSales Region', 'SalesRegion']
+    for name in possible_names:
+        if name in columns:
+            return name
+    return None
+
 # --- File Upload ---
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
@@ -121,67 +136,50 @@ else:
         st.error(f"Failed to load default file from GitHub. {e}")
         st.stop()
 
-
-uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
-
-if uploaded_file is not None:
-    try:
-        df = load_data(uploaded_file)
-
-        # Show Edit button below upload
-        if st.button("Edit Dataset"):
-            st.session_state.show_edit_tab = True
-        else:
-            st.session_state.show_edit_tab = False
-
-        # Tabs: Dashboard and Edit
-        tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
-
-        with tab1:
-            if not st.session_state.get("show_edit_tab", False):
-                st.title("Factory Production Relocation Dashboard")
-                # Your dashboard logic here
-
-        with tab2:
-            if st.session_state.get("show_edit_tab", False):
-                st.subheader("Edit Full Dataset")
-                edited_df = st.data_editor(df, num_rows="dynamic")
-
-                import io
-                if st.button("Download Updated Excel File"):
-                    output = io.BytesIO()
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
-                    st.download_button(
-                        label="Click to Download",
-                        data=output.getvalue(),
-                        file_name="updated_factory_data.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-
-    except Exception as e:
-        st.error(f"Failed to load data.\n\n{e}")
-        st.stop()
-else:
-    st.info("Please upload an Excel file to begin.")
-
-
-
-
 # --- Tabs ---
 tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
 
 with tab1:
     st.title("Factory Production Relocation Dashboard")
 
-    # All your dashboard logic goes here
-    # Define machine_code_filter, etc. inside this block
+    # Filters
+    sales_region_col = find_sales_region_col(df.columns)
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        machine_code_filter = st.multiselect("Machine Code (FM)", sorted(df["FM"].dropna().astype(str).unique()))
+    with c2:
+        machine_name_filter = st.multiselect("Machine Name", sorted(df["Name"].dropna().astype(str).unique()))
+    with c3:
+        engine_filter = st.multiselect("Select Engine Type", sorted(df["Engine"].dropna().astype(str).unique()))
+    with c4:
+        emission_filter = st.multiselect("Select Emission Level", sorted(df["Emission"].dropna().astype(str).unique()))
+
+    if sales_region_col:
+        sales_region_filter = st.multiselect("Sales Region", sorted(df[sales_region_col].dropna().astype(str).unique()))
+    else:
+        sales_region_filter = []
+        st.info("Sales Region column not found.")
+
+    # Apply filters
+    filtered_df = df.copy()
+    if machine_code_filter:
+        filtered_df = filtered_df[filtered_df["FM"].astype(str).isin(machine_code_filter)]
+    if machine_name_filter:
+        filtered_df = filtered_df[filtered_df["Name"].astype(str).isin(machine_name_filter)]
+    if engine_filter:
+        filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
+    if emission_filter:
+        filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
+    if sales_region_col and sales_region_filter:
+        filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
+
+    st.dataframe(filtered_df)
 
 with tab2:
     st.subheader("Edit Full Dataset")
     edited_df = st.data_editor(df, num_rows="dynamic")
 
-    import io
     if st.button("Download Updated Excel File"):
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -192,108 +190,6 @@ with tab2:
             file_name="updated_factory_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
-
-
-with tab1:
-    st.title("Factory Production Relocation Dashboard")
-    # All your existing dashboard code goes here
-
-
-
-# Sidebar file uploader
-if uploaded_file is not None:
-    try:
-        # Load and merge data (your existing logic)
-        df = load_data(uploaded_file)
-
-        # --- Add tabs for Dashboard and Editing ---
-        tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
-
-        with tab2:
-            st.subheader("Edit Full Dataset")
-            edited_df = st.data_editor(df, num_rows="dynamic")
-
-            import io
-            if st.button("Download Updated Excel File"):
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
-                st.download_button(
-                    label="Click to Download",
-                    data=output.getvalue(),
-                    file_name="updated_factory_data.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-        with tab1:
-            st.title("Factory Production Relocation Dashboard")
-
-            # Detect sales region column dynamically
-            sales_region_col = find_sales_region_col(df.columns)
-
-            # Row 1: Machine Code, Machine Name, Engine, Emission
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                machine_code_filter = st.multiselect(
-                    "Machine Code (FM)",
-                    options=sorted(df["FM"].dropna().astype(str).unique().tolist())
-                )
-            with c2:
-                machine_name_filter = st.multiselect(
-                    "Machine Name",
-                    options=sorted(df["Name"].dropna().astype(str).unique().tolist())
-                )
-            with c3:
-                engine_filter = st.multiselect(
-                    "Select Engine Type",
-                    options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
-                )
-            with c4:
-                emission_filter = st.multiselect(
-                    "Select Emission Level",
-                    options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
-                )
-
-            # Row 2: Sales Region (if column found)
-            if sales_region_col:
-                (c5,) = st.columns(1)
-                with c5:
-                    sales_region_filter = st.multiselect(
-                        "Sales Region",
-                        options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
-                    )
-            else:
-                sales_region_filter = []
-                st.info(
-                    "Sales Region column not found. Looking for variations like "
-                    "'Sales Region', 'Main Sales Region', 'MainSales Region', or 'SalesRegion'."
-                )
-
-    except Exception as e:
-        st.error(f"Failed to load data.\n\n{e}")
-        st.stop()
-else:
-    st.info("Please upload an Excel file to begin.")
-
-
-# ---------- Apply filters (updated) ----------
-filtered_df = df.copy()
-
-if machine_code_filter:
-    filtered_df = filtered_df[filtered_df["FM"].astype(str).isin(machine_code_filter)]
-
-if machine_name_filter:
-    filtered_df = filtered_df[filtered_df["Name"].astype(str).isin(machine_name_filter)]
-
-if engine_filter:
-    filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
-
-if emission_filter:
-    filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
-
-if sales_region_col and sales_region_filter:
-    filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
 
 # ---------- Map centering ----------
@@ -502,6 +398,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
