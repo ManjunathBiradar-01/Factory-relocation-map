@@ -309,46 +309,46 @@ popup_html   = (f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
             f"<b>Volume Lead Plant:</b> {vol_txt}")
 
         # 1) Animated path (AntPath) – the moving dashes show direction
-        path = AntPath(
-            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],  # [lat, lon]
-            color="#e63946",          # red
-            weight=5,
-            opacity=0.9,
-            dash_array=[10, 20],      # pattern of dash/space
-            delay=800,                # smaller is faster
-            pulse_color="#ffd166",    # glow color
-            paused=False,
-            reverse=False,
-            hardware_accelerated=True
-        )
+path = AntPath(
+    locations=[[lat_today, lon_today], [lat_lead, lon_lead]],  # [lat, lon]
+    color="#e63946",          # red
+    weight=5,
+    opacity=0.9,
+    dash_array=[10, 20],      # pattern of dash/space
+    delay=800,                # smaller is faster
+    pulse_color="#ffd166",    # glow color
+    paused=False,
+    reverse=False,
+    hardware_accelerated=True
+)
         # Attach tooltip & popup
-        folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-        folium.Popup(popup_html, max_width=320).add_to(path)
-        path.add_to(m)
+folium.Tooltip(tooltip_html, sticky=True).add_to(path)
+folium.Popup(popup_html, max_width=320).add_to(path)
+path.add_to(m)
 
         # 2) Add an arrowhead at the END of the path (via plugin)
-        arrow_js = f"""
-        <script>
-        try {{
-          var lyr = {path.get_name()};
-          if (lyr && typeof lyr.arrowheads === 'function') {{
-            lyr.arrowheads({{
-              size: '16px',
-              frequency: 'endonly',   // only at the destination
-              yawn: 45,               // arrow opening angle
-              fill: true,
-              color: '#e63946'        // match the path color
-            }});
-          }}
-        }} catch (e) {{
-          console.warn('Arrowheads plugin failed:', e);
-        }}
-        </script>
-        """
-        m.get_root().html.add_child(Element(arrow_js))
+arrow_js = f"""
+<script>
+try {{
+    var lyr = {path.get_name()};
+    if (lyr && typeof lyr.arrowheads === 'function') {{
+    lyr.arrowheads({{
+        size: '16px',
+        frequency: 'endonly',   // only at the destination
+        yawn: 45,               // arrow opening angle
+        fill: true,
+        color: '#e63946'        // match the path color
+    }});
+    }}
+}} catch (e) {{
+    console.warn('Arrowheads plugin failed:', e);
+}}
+</script>
+"""
+m.get_root().html.add_child(Element(arrow_js))
 
         # Keep for auto-zoom
-        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
 
 # Auto-zoom to all drawn flows
 if bounds:
@@ -389,6 +389,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
