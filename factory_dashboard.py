@@ -376,9 +376,10 @@ view_state = pdk.ViewState(
 
 # Render map
 st.pydeck_chart(pdk.Deck(
-    layers=[line_layer, marker_layer],
-    initial_view_state=view_state,
-    tooltip={"text": "{label}"}
+    
+layers=[arrow_layer, marker_layer],
+initial_view_state=view_state,
+tooltip={"text": "{label}"}
 ))
 
 
@@ -406,6 +407,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
