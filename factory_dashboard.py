@@ -287,6 +287,16 @@ import pandas as pd
 # Use a standard location pin icon from Wikimedia
 # Add icon data to each marker
 # Use a standard location pin icon from Wikimedia
+
+
+# Sample marker data
+markers_data = {
+    "lon": [-122.4, -122.5, -122.6],
+    "lat": [37.8, 37.7, 37.6],
+    "name": ["Location A", "Location B", "Location C"]
+}
+markers = pd.DataFrame(markers_data
+
 icon_data = {
     "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",  # Classic map pin icon
     "width": 128,
@@ -384,6 +394,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
