@@ -200,15 +200,14 @@ else:
         )
 
     
-edit_mode = st.sidebar.button("Edit Dataset")
+uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"], key="file_uploader")
+edit_mode = st.sidebar.button("Edit Dataset", key="edit_button")
+...
+edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor")
+...
+st.button("Download Updated Excel File", key="download_button")
+st.download_button(..., key="download_link")
 
-if edit_mode:
-    if df is not None and not df.empty:
-        st.subheader("Edit Full Dataset")
-        edited_df = st.data_editor(df, num_rows="dynamic")
-        ...
-    else:
-        st.warning("No data available to edit.")
 
 
 
@@ -419,6 +418,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
