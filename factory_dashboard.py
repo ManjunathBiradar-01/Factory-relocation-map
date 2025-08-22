@@ -157,52 +157,78 @@ uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
-        # Load and merge data (same as your current logic)
-        ...
+        # Load and merge data (your existing logic)
+        df = load_data(uploaded_file)
 
-  # ---------- UI (updated) ----------
-st.title("Factory Production Relocation Dashboard")
+        # --- Add tabs for Dashboard and Editing ---
+        tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
 
-# Detect sales region column dynamically
-sales_region_col = find_sales_region_col(df.columns)
+        with tab2:
+            st.subheader("Edit Full Dataset")
+            edited_df = st.data_editor(df, num_rows="dynamic")
 
-# Row 1: Machine Code, Machine Name, Engine, Emission
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    machine_code_filter = st.multiselect(
-        "Machine Code (FM)",
-        options=sorted(df["FM"].dropna().astype(str).unique().tolist())
-    )
-with c2:
-    machine_name_filter = st.multiselect(
-        "Machine Name",
-        options=sorted(df["Name"].dropna().astype(str).unique().tolist())
-    )
-with c3:
-    engine_filter = st.multiselect(
-        "Select Engine Type",
-        options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
-    )
-with c4:
-    emission_filter = st.multiselect(
-        "Select Emission Level",
-        options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
-    )
+            import io
+            if st.button("Download Updated Excel File"):
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
+                st.download_button(
+                    label="Click to Download",
+                    data=output.getvalue(),
+                    file_name="updated_factory_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
-# Row 2: Sales Region (if column found)
-if sales_region_col:
-    (c5,) = st.columns(1)
-    with c5:
-        sales_region_filter = st.multiselect(
-            "Sales Region",
-            options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
-        )
+        with tab1:
+            st.title("Factory Production Relocation Dashboard")
+
+            # Detect sales region column dynamically
+            sales_region_col = find_sales_region_col(df.columns)
+
+            # Row 1: Machine Code, Machine Name, Engine, Emission
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                machine_code_filter = st.multiselect(
+                    "Machine Code (FM)",
+                    options=sorted(df["FM"].dropna().astype(str).unique().tolist())
+                )
+            with c2:
+                machine_name_filter = st.multiselect(
+                    "Machine Name",
+                    options=sorted(df["Name"].dropna().astype(str).unique().tolist())
+                )
+            with c3:
+                engine_filter = st.multiselect(
+                    "Select Engine Type",
+                    options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
+                )
+            with c4:
+                emission_filter = st.multiselect(
+                    "Select Emission Level",
+                    options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
+                )
+
+            # Row 2: Sales Region (if column found)
+            if sales_region_col:
+                (c5,) = st.columns(1)
+                with c5:
+                    sales_region_filter = st.multiselect(
+                        "Sales Region",
+                        options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
+                    )
+            else:
+                sales_region_filter = []
+                st.info(
+                    "Sales Region column not found. Looking for variations like "
+                    "'Sales Region', 'Main Sales Region', 'MainSales Region', or 'SalesRegion'."
+                )
+
+    except Exception as e:
+        st.error(f"Failed to load data.\n\n{e}")
+        st.stop()
 else:
-    sales_region_filter = []
-    st.info(
-        "Sales Region column not found. Looking for variations like "
-        "'Sales Region', 'Main Sales Region', 'MainSales Region', or 'SalesRegion'."
-    )
+    st.info("Please upload an Excel file to begin.")
+
 
 # ---------- Apply filters (updated) ----------
 filtered_df = df.copy()
@@ -429,6 +455,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
