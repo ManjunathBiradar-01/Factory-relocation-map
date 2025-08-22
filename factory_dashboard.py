@@ -1,21 +1,7 @@
-# factory_dashboard_fixed.py
-
-import io
-from datetime import datetime
-
-import numpy as np
-import pandas as pd
-import folium
-from folium.plugins import AntPath
-from folium import Element, JavascriptLink
-
 import streamlit as st
-
-# -------------------- Page settings --------------------
-st.set_page_config(
-    page_title="Bomag SDMs Factory Production Relocation Dashboard",
-    layout="wide"
-)
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
 
 # -------------------- Data loader (single source of truth) --------------------
 @st.cache_data(show_spinner=False)
@@ -23,66 +9,145 @@ def load_data(xlsx_file) -> pd.DataFrame:
     """
     Loads and merges the required sheets:
       - From (original location data)
-      - To (lead factory coordinates)
-      - Values (volume %)
-    Performs basic validations and returns a single merged DataFrame.
+      - To (lead factory coordinates & optional %)
+      - Sub (sub factory coordinates & optional %)
+    Performs validations and returns a merged long DataFrame with per-sub rows.
     Accepts both file-like objects (Streamlit UploadedFile) and file paths/URLs.
     """
-    # Read only the required sheets
-    df_from = pd.read_excel(xlsx_file, sheet_name="From", engine="openpyxl")
-    df_to   = pd.read_excel(xlsx_file, sheet_name="To", engine="openpyxl")
-    df_val  = pd.read_excel(xlsx_file, sheet_name="Values", engine="openpyxl")
 
-    # Normalize column names (trim spaces)
-    for d in (df_from, df_to, df_val):
+    # ---- Helper: read a sheet by any of several possible names ----
+    def read_sheet_any(file, candidates: list[str]) -> pd.DataFrame:
+        last_err = None
+        for name in candidates:
+            try:
+                return pd.read_excel(file, sheet_name=name, engine="openpyxl")
+            except Exception as e:
+                last_err = e
+        raise ValueError(
+            f"Could not find any of these sheets: {candidates}. Last error: {last_err}"
+        )
+
+    # ---- Helper: column finder (first match from a set of candidates) ----
+    def find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
+        norm = {c.lower().strip(): c for c in df.columns}
+        for x in candidates:
+            if x.lower().strip() in norm:
+                return norm[x.lower().strip()]
+        return None
+
+    # ---- Read minimum sheets (NO 'Values' sheet used) ----
+    df_from = read_sheet_any(xlsx_file, ["From"])
+    df_to   = read_sheet_any(xlsx_file, ["To"])
+    # Try to locate the sub sheet with flexible names
+    df_sub  = read_sheet_any(xlsx_file, ["Sub", "Sub Factory", "SubFactory", "Sub-Factories", "SubFactories"])
+
+    # Normalize column names
+    for d in (df_from, df_to, df_sub):
         d.columns = d.columns.str.strip()
 
-    # Required columns check (helps debug early)
+    # ---- Required columns validation ----
+    # From
     required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude"}
-    required_to   = {"FM", "Plan Lead Factory", "Latitude", "Longitude"}
-    required_val  = {"FM", "Volume Lead Plant (%)"}
+    missing_from = required_from - set(df_from.columns)
+    if missing_from:
+        raise ValueError(f"'From' missing columns: {sorted(missing_from)}")
 
-    missing = [
-        ("From",   required_from - set(df_from.columns)),
-        ("To",     required_to   - set(df_to.columns)),
-        ("Values", required_val  - set(df_val.columns)),
-    ]
-    missing = [(s, cols) for s, cols in missing if cols]
-    if missing:
-        msg = "; ".join([f"{s} missing: {sorted(cols)}" for s, cols in missing])
-        raise ValueError(f"Expected columns not found -> {msg}")
+    # To
+    required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude"}
+    missing_to = required_to - set(df_to.columns)
+    if missing_to:
+        raise ValueError(f"'To' missing columns: {sorted(missing_to)}")
 
-    # Rename coordinates to avoid collisions
+    # Sub: name + coords (volume optional)
+    # Try to find a sub factory name column
+    sub_name_col = find_col(
+        df_sub,
+        ["Sub Factory", "Sub-Factory", "SubFactory", "Sub Plant", "Sub Plant Name", "Allocated Sub Factory"]
+    )
+    if not sub_name_col:
+        raise ValueError(
+            "Could not find a Sub Factory name column in 'Sub' sheet. "
+            "Expected one of: 'Sub Factory', 'Sub-Factory', 'SubFactory', 'Sub Plant', 'Allocated Sub Factory'."
+        )
+
+    # ---- Rename coordinates to avoid collisions ----
     df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
     df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead"})
+    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",  "Longitude": "Lon_sub", sub_name_col: "Sub Factory"})
 
-    # Keep only necessary columns prior to merge
-    df_to_keep  = df_to[["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]].copy()
-    df_val_keep = df_val[["FM", "Volume Lead Plant (%)"]].copy()
+    # ---- Detect optional volume columns ----
+    # Lead % candidates (in 'To')
+    lead_pct_col = find_col(df_to, [
+        "Volume Lead Plant (%)", "Lead Volume (%)", "Lead Allocation (%)",
+        "Lead %", "Lead Percent", "Volume (%)", "Volume"
+    ])
+    # Sub % candidates (in 'Sub')
+    sub_pct_col = find_col(df_sub, [
+        "Volume Sub (%)", "Sub Volume (%)", "Sub Allocation (%)", "Sub %",
+        "Volume (%)", "Volume"
+    ])
 
-    # Merge on FM
-    merged = (
-        df_from
-        .merge(df_to_keep,  on="FM", how="left")
-        .merge(df_val_keep, on="FM", how="left")
-    )
+    # ---- Keep only necessary columns prior to merge ----
+    df_to_keep  = ["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]
+    if lead_pct_col:
+        df_to_keep.append(lead_pct_col)
+    df_to_keep = df_to[df_to_keep].copy()
 
-    # Convert to numeric coords
-    for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]:
+    df_sub_keep = ["FM", "Sub Factory", "Lat_sub", "Lon_sub"]
+    if sub_pct_col:
+        df_sub_keep.append(sub_pct_col)
+    # If Sub sheet is given per FM only, allow duplicates; else it's fine.
+    df_sub_keep = df_sub[df_sub_keep].copy()
+
+    # ---- Merge From + To (one-to-one on FM) ----
+    merged = df_from.merge(df_to_keep, on="FM", how="left")
+
+    # ---- Attach Sub (one-to-many on FM) ----
+    merged = merged.merge(df_sub_keep, on="FM", how="left", suffixes=("", "_sub"))
+
+    # ---- Convert to numeric coords ----
+    for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]:
         merged[c] = pd.to_numeric(merged[c], errors="coerce")
+
+    # ---- Compute % flows (no Values sheet) ----
+    # Lead_Pct
+    if lead_pct_col and lead_pct_col in merged.columns:
+        merged["Lead_Pct"] = pd.to_numeric(merged[lead_pct_col], errors="coerce")
+    else:
+        # Default: 100% from -> lead if not specified
+        merged["Lead_Pct"] = 100.0
+
+    # Sub_Pct
+    if sub_pct_col and sub_pct_col in merged.columns:
+        merged["Sub_Pct"] = pd.to_numeric(merged[sub_pct_col], errors="coerce")
+    else:
+        # If no sub percentage is provided:
+        # - If an FM has N sub factories, split equally (100/N) for that FM.
+        # - If an FM has exactly 1 sub or none, set 100% to that single sub (or NaN sub means no split).
+        # Compute counts per FM where Sub Factory is present
+        counts = (
+            merged.assign(has_sub=merged["Sub Factory"].notna())
+                  .groupby("FM", dropna=False)["has_sub"].sum()
+                  .rename("n_sub")
+        )
+        merged = merged.merge(counts, on="FM", how="left")
+        def _infer_sub_pct(row):
+            if pd.isna(row.get("Sub Factory")):
+                # no sub designated: treat as 100% at lead with no further split
+                return 100.0
+            n = row.get("n_sub", 0)
+            return 100.0 / n if n and n > 0 else 100.0
+        merged["Sub_Pct"] = merged.apply(_infer_sub_pct, axis=1)
+        merged.drop(columns=["n_sub"], inplace=True, errors="ignore")
+
+    # Overall From->Sub %
+    merged["From_to_Sub_Pct"] = (merged["Lead_Pct"].fillna(0) * merged["Sub_Pct"].fillna(0)) / 100.0
 
     return merged
 
 
-# -------------------- Helper: find 'Sales Region' column --------------------
+# -------------------- Helper: find 'Sales Region' column (unchanged) --------------------
 def find_sales_region_col(columns) -> str | None:
-    """
-    Tries to find a sales region column in the merged dataframe.
-    Accepts common variants like:
-      'Sales Region', 'Main Sales Region', 'MainSales Region',
-      'MainSalesRegion', 'SalesRegion', 'main_sales_region'
-    Returns the exact column name if found, otherwise None.
-    """
     normalized = {c.lower().strip(): c for c in columns}
     candidates = [
         "sales region", "main sales region", "mainsales region",
@@ -91,8 +156,6 @@ def find_sales_region_col(columns) -> str | None:
     for key in candidates:
         if key in normalized:
             return normalized[key]
-
-    # Fallback: any column containing both 'sales' and 'region'
     for c in columns:
         cl = c.lower()
         if "sales" in cl and "region" in cl:
@@ -100,9 +163,8 @@ def find_sales_region_col(columns) -> str | None:
     return None
 
 
-# -------------------- Small utility: format coordinates --------------------
+# -------------------- Small utility: format coordinates (unchanged) --------------------
 def format_coords(lat, lon, decimals: int = 5) -> str:
-    """Return a friendly 'lat, lon' string or 'n/a' if missing."""
     if pd.notnull(lat) and pd.notnull(lon):
         return f"{lat:.{decimals}f}, {lon:.{decimals}f}"
     return "n/a"
@@ -119,11 +181,11 @@ if uploaded_file is not None:
         st.error(f"Failed to load data: {e}")
         st.stop()
 else:
-    # Fallback to your GitHub file (make sure the URL is correct and public)
+    # Fallback (keep your GitHub default or upload your 'Footprint_SDR 4.xlsx')
     default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
     try:
         df = load_data(default_url)
-        st.sidebar.info("Using default dataset from GitHub (upload a file to override).")
+        st.sidebar.info("Using default dataset from GitHub (upload 'Footprint_SDR 4.xlsx' to override).")
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
@@ -137,6 +199,7 @@ with tab1:
 
     sales_region_col = find_sales_region_col(df.columns)
 
+    # Filters
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         machine_code_filter = st.multiselect(
@@ -159,6 +222,19 @@ with tab1:
             sorted(df["Emission"].dropna().astype(str).unique())
         )
 
+    # NEW: Lead & Sub factory filters
+    c5, c6 = st.columns(2)
+    with c5:
+        lead_filter = st.multiselect(
+            "Lead Factory (To)",
+            sorted(df["Plan Lead Factory"].dropna().astype(str).unique())
+        )
+    with c6:
+        sub_factory_filter = st.multiselect(
+            "Sub Factory",
+            sorted(df["Sub Factory"].dropna().astype(str).unique())
+        )
+
     if sales_region_col:
         sales_region_filter = st.multiselect(
             "Sales Region",
@@ -178,206 +254,117 @@ with tab1:
         filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
     if emission_filter:
         filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
+    if lead_filter:
+        filtered_df = filtered_df[filtered_df["Plan Lead Factory"].astype(str).isin(lead_filter)]
+    if sub_factory_filter:
+        filtered_df = filtered_df[filtered_df["Sub Factory"].astype(str).isin(sub_factory_filter)]
     if sales_region_col and sales_region_filter:
         filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
-    # -------------------- Map centering --------------------
-    coords = []
-    if not filtered_df.empty:
-        coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
-        coords.extend(filtered_df[["Lat_lead",  "Lon_lead"]].dropna().values.tolist())
+    # Friendly coordinate strings (optional for table)
+    filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
+    filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
+    filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
 
-    if coords:
-        center_lat = float(np.mean([c[0] for c in coords]))
-        center_lon = float(np.mean([c[1] for c in coords]))
+    # KPIs
+    kc1, kc2, kc3, kc4 = st.columns(4)
+    with kc1:
+        st.metric("Unique FMs", filtered_df["FM"].nunique())
+    with kc2:
+        st.metric("From Factories", filtered_df["Factory today"].nunique())
+    with kc3:
+        st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
+    with kc4:
+        st.metric("Sub Factories", filtered_df["Sub Factory"].nunique())
+
+    st.subheader("Volume Flow (From → Lead → Sub)")
+
+    # ---- Prepare Sankey data ----
+    # Edge 1: From -> Lead (sum Lead_Pct but avoid double counting the same FM repeated across subs)
+    # First deduplicate per FM for the From->Lead edge
+    dedup_from_lead = (
+        filtered_df[["FM", "Factory today", "Plan Lead Factory", "Lead_Pct"]]
+        .drop_duplicates(subset=["FM", "Factory today", "Plan Lead Factory"])
+    )
+    edges_from_lead = (
+        dedup_from_lead
+        .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["Lead_Pct"].sum()
+        .rename(columns={"Lead_Pct": "value"})
+    )
+
+    # Edge 2: Lead -> Sub (sum From_to_Sub_Pct across FM/subs)
+    edges_lead_sub = (
+        filtered_df
+        .groupby(["Plan Lead Factory", "Sub Factory"], as_index=False)["From_to_Sub_Pct"].sum()
+        .rename(columns={"From_to_Sub_Pct": "value"})
+    )
+
+    # Build node list
+    from_nodes = edges_from_lead["Factory today"].dropna().unique().tolist()
+    lead_nodes = pd.concat([
+        edges_from_lead["Plan Lead Factory"].dropna(),
+        edges_lead_sub["Plan Lead Factory"].dropna()
+    ]).unique().tolist()
+    sub_nodes = edges_lead_sub["Sub Factory"].dropna().unique().tolist()
+
+    labels = from_nodes + lead_nodes + sub_nodes
+    node_index = {label: i for i, label in enumerate(labels)}
+
+    # Sources/targets/values
+    s, t, v = [], [], []
+    for _, row in edges_from_lead.iterrows():
+        s.append(node_index[row["Factory today"]])
+        t.append(node_index[row["Plan Lead Factory"]])
+        v.append(max(0.0, float(row["value"])))
+
+    for _, row in edges_lead_sub.iterrows():
+        s.append(node_index[row["Plan Lead Factory"]])
+        t.append(node_index[row["Sub Factory"]])
+        v.append(max(0.0, float(row["value"])))
+
+    if len(labels) and len(v) and sum(v) > 0:
+        fig = go.Figure(data=[go.Sankey(
+            arrangement="snap",
+            node=dict(
+                pad=18,
+                thickness=18,
+                line=dict(color="gray", width=0.5),
+                label=labels
+            ),
+            link=dict(
+                source=s,
+                target=t,
+                value=v
+            )
+        )])
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        center_lat, center_lon = 20.0, 0.0  # global fallback
+        st.info("No flow data to display for the current filters.")
 
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
-
-    # Load Leaflet arrowheads plugin (once per map)
-    m.get_root().header.add_child(JavascriptLink(
-        "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
-    ))
-
-    # Tidy tooltip/popup CSS
-    FONT_SIZE_PX = 16
-    css = f"""
-    <style>
-      .leaflet-tooltip {{
-        font-size: {FONT_SIZE_PX}px;
-        font-weight: 600;
-        color: #111;
-      }}
-      .leaflet-popup-content {{
-        font-size: {FONT_SIZE_PX}px;
-        line-height: 1.35;
-        color: #111;
-      }}
-      .leaflet-popup-content-wrapper {{
-        padding: 8px 12px;
-      }}
-      @media (max-width: 768px) {{
-        .leaflet-tooltip,
-        .leaflet-popup-content {{
-          font-size: {FONT_SIZE_PX + 2}px;
-        }}
-      }}
-    </style>
-    """
-    m.get_root().header.add_child(Element(css))
-
-    # -------------------- Plot markers & flows --------------------
-    bounds = []  # collect endpoints for fit_bounds
-
-    for _, row in filtered_df.iterrows():
-        lat_today, lon_today = row["Lat_today"], row["Lon_today"]
-        lat_lead,  lon_lead  = row["Lat_lead"],  row["Lon_lead"]
-
-        # Optional Sales Region line for popup
-        sales_region_line = ""
-        if sales_region_col and pd.notnull(row.get(sales_region_col, None)):
-            sales_region_line = f"<br><b>Sales Region:</b> {row.get(sales_region_col, '')}"
-
-        # Markers
-        if pd.notnull(lat_today) and pd.notnull(lon_today):
-            folium.Marker(
-                [lat_today, lon_today],
-                popup=folium.Popup(
-                    f"<b>Factory Today:</b> {row.get('Factory today','')}{sales_region_line}",
-                    max_width=320
-                ),
-                icon=folium.Icon(color="red", icon="industry", prefix="fa"),
-                tooltip="Factory Today"
-            ).add_to(m)
-
-        if pd.notnull(lat_lead) and pd.notnull(lon_lead):
-            folium.Marker(
-                [lat_lead, lon_lead],
-                popup=folium.Popup(
-                    f"<b>Plan Lead Factory:</b> {row.get('Plan Lead Factory','')}{sales_region_line}",
-                    max_width=320
-                ),
-                icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
-                tooltip="Plan Lead Factory"
-            ).add_to(m)
-
-        # Flow with animated path
-        if (
-            pd.notnull(lat_today) and pd.notnull(lon_today)
-            and pd.notnull(lat_lead) and pd.notnull(lon_lead)
-        ):
-            # Volume formatting
-            vol_raw = row.get("Volume Lead Plant (%)")
-            try:
-                vol_num = float(vol_raw) if pd.notnull(vol_raw) else None
-            except Exception:
-                vol_num = None
-
-            vol_txt = f"{vol_num:.0f}%" if vol_num is not None else ("n/a" if pd.isna(vol_raw) else str(vol_raw))
-            from_name = (row.get("Factory today", "") or "").strip() or "n/a"
-            to_name   = (row.get("Plan Lead Factory", "") or "").strip() or "n/a"
-
-            tooltip_html = f"From: {from_name} → To: {to_name}<br>Volume Lead Plant: {vol_txt}"
-            popup_html   = (
-                f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
-                f"<b>Volume Lead Plant:</b> {vol_txt}"
-            )
-
-            path = AntPath(
-                locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-                color="#e63946",      # red
-                weight=5,
-                opacity=0.9,
-                dash_array=[10, 20],  # pattern of dash/space
-                delay=800,            # smaller is faster
-                pulse_color="#ffd166",
-                paused=False,
-                reverse=False,
-                hardware_accelerated=True
-            )
-            folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-            folium.Popup(popup_html, max_width=320).add_to(path)
-            path.add_to(m)
-
-            # Add an arrowhead at the END of the path via plugin
-            # (path.get_name() is the JavaScript variable name emitted by folium)
-            arrow_js = f"""
-            <script>
-              try {{
-                var lyr = {path.get_name()};
-                if (lyr && typeof lyr.arrowheads === 'function') {{
-                  lyr.arrowheads({{
-                    size: '16px',
-                    frequency: 'endonly',
-                    yawn: 45,
-                    fill: true,
-                    color: '#e63946'
-                  }});
-                }}
-              }} catch (e) {{
-                console.warn('Arrowheads plugin failed:', e);
-              }}
-            </script>
-            """
-            m.get_root().html.add_child(Element(arrow_js))
-
-            # Keep for auto-zoom
-            bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
-
-    # Auto-zoom to all drawn flows
-    if bounds:
-        m.fit_bounds(bounds)
-
-    # -------------------- Render map --------------------
-    st.subheader("Production Relocation Map")
-    st.components.v1.html(m._repr_html_(), height=600)
-
-    # -------------------- Optional: show filtered data with readable coords --------------------
-    if not filtered_df.empty:
-        filtered_df = filtered_df.copy()
-        filtered_df["Factory Today Location"] = filtered_df.apply(
-            lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1
-        )
-        filtered_df["Lead Factory Location"] = filtered_df.apply(
-            lambda r: format_coords(r["Lat_lead"], r["Lon_lead"]), axis=1
-        )
-
-        with st.expander("Show filtered data"):
-            cols_to_show = ["FM", "Name"]
-            if sales_region_col:
-                cols_to_show.append(sales_region_col)
-            cols_to_show += [
-                "Emission", "Engine", "Factory today",
-                "Factory Today Location",
-                "Plan Lead Factory",
-                "Lead Factory Location",
-                "Volume Lead Plant (%)",
-                "Lat_today", "Lon_today", "Lat_lead", "Lon_lead",
-            ]
-            cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
-            st.dataframe(filtered_df[cols_to_show].reset_index(drop=True))
+    # ---- Detail table: per FM → Sub row with % ----
+    st.subheader("Detailed Flow Table")
+    flow_cols = [
+        "FM", "Name", "Engine", "Emission",
+        "Factory today", "Plan Lead Factory", "Sub Factory",
+        "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
+        "Coords_today", "Coords_lead", "Coords_sub"
+    ]
+    present_cols = [c for c in flow_cols if c in filtered_df.columns]
+    st.dataframe(
+        filtered_df[present_cols]
+        .sort_values(["Factory today", "Plan Lead Factory", "Sub Factory", "FM"], na_position="last"),
+        use_container_width=True
+    )
 
 
 with tab2:
-    st.subheader("Edit Full Dataset")
-    edited_df = st.data_editor(df, num_rows="dynamic")
-    bcol1, bcol2 = st.columns([1, 3])
-    with bcol1:
-        if st.button("Prepare Download"):
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                edited_df.to_excel(writer, index=False, sheet_name="UpdatedData")
-            st.session_state["_edited_bytes"] = output.getvalue()
-
-    with bcol2:
-        if "_edited_bytes" in st.session_state:
-            st.download_button(
-                label="Click to Download updated_factory_data.xlsx",
-                data=st.session_state["_edited_bytes"],
-                file_name="updated_factory_data.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+    st.subheader("Edit Dataset")
+    st.write("Use the sidebar to upload a new Excel. Ensure the file contains:")
+    st.markdown("""
+    - **From** sheet with: `FM`, `Name`, `Emission`, `Engine`, `Factory today`, `Latitude`, `Longitude`
+    - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
+    - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
+    """)
 
 
 
