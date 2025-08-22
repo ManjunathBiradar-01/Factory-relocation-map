@@ -204,7 +204,18 @@ else:
 # ---------- Map centering ----------
 coords = []
 if not filtered_df.empty:
-    coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
+    coords = []
+if not filtered_df.empty:
+    if "Lat_today" in filtered_df.columns and "Lon_today" in filtered_df.columns:
+        coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
+    else:
+        st.warning("Missing columns 'Lat_today' or 'Lon_today' in the dataset.")
+
+    if "Lat_lead" in filtered_df.columns and "Lon_lead" in filtered_df.columns:
+        coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
+    else:
+        st.warning("Missing columns 'Lat_lead' or 'Lon_lead' in the dataset.")
+
     coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
 
 if coords:
@@ -407,6 +418,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
