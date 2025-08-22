@@ -107,17 +107,14 @@ uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 if uploaded_file is not None:
     try:
         df = load_data(uploaded_file)
-    except Exception as e:
         st.error(f"Failed to load uploaded file. {e}")
         st.stop()
 else:
     try:
         df = load_data("https://raw.githubusercontent.com/yourusername/yourrepo/main/Footprint_SDR.xlsx")
-    except Exception as e:
         st.error(f"Failed to load default file from GitHub.{e}")
         st.stop()
 
-except Exception as e:
     st.error(f"Failed to load data from '{excel_path}'.\n\n{e}")
     st.stop()
 
@@ -295,7 +292,6 @@ for _, row in filtered_df.iterrows():
         vol_raw = row.get("Volume Lead Plant (%)")
         try:
             vol_num = float(vol_raw) if pd.notnull(vol_raw) else None
-        except Exception:
             vol_num = None
         vol_txt = f"{vol_num:.0f}%" if vol_num is not None else ("n/a" if pd.isna(vol_raw) else str(vol_raw))
 
@@ -389,6 +385,11 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
+
+
+
+
 
 
 
