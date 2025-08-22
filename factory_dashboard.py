@@ -62,24 +62,6 @@ except Exception as e:
     st.error(f"Failed to load data: {e}")
     st.stop()
 
-# Edit dataset
-if edit_mode:
-    if isinstance(df, pd.DataFrame) and not df.empty:
-        st.subheader("Edit Full Dataset")
-        edited_df = st.data_editor(df, num_rows="dynamic", key="data_editor")
-        if st.button("Download Updated Excel File", key="download_button"):
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                edited_df.to_excel(writer, index=False, sheet_name='UpdatedData')
-            st.download_button(
-                label="Click to Download",
-                data=output.getvalue(),
-                file_name="updated_factory_data.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="download_link"
-            )
-    else:
-        st.warning("No data available to edit.")
 
 # Main dashboard
 st.title("Factory Production Relocation Dashboard")
@@ -133,6 +115,7 @@ else:
 m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
 st.subheader("Production Relocation Map")
 st.components.v1.html(m._repr_html_(), height=600)
+
 
 
 
