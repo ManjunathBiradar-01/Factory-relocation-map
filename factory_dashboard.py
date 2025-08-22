@@ -318,6 +318,18 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
+
+
+lines_data = {
+    "from_lon": [-122.4, -122.5],
+    "from_lat": [37.8, 37.7],
+    "to_lon": [-122.5, -122.6],
+    "to_lat": [37.7, 37.6]
+}
+lines_df = pd.DataFrame(lines_data)
+
+
+
 # Prepare trips data for animated arrows
 lines_df["path"] = lines_df.apply(
     lambda row: [[row["from_lon"], row["from_lat"]], [row["to_lon"], row["to_lat"]]],
@@ -394,6 +406,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
