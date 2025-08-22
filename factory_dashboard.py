@@ -233,7 +233,7 @@ with tab1:
     with c6:
         sub_factory_filter = st.multiselect(
             "Sub Factory",
-            sorted(df["Sub Factory"].dropna().astype(str).unique())
+            sorted(df["Plan Sub Factory"].dropna().astype(str).unique())
         )
 
     if sales_region_col:
@@ -258,7 +258,7 @@ with tab1:
     if lead_filter:
         filtered_df = filtered_df[filtered_df["Plan Lead Factory"].astype(str).isin(lead_filter)]
     if sub_factory_filter:
-        filtered_df = filtered_df[filtered_df["Sub Factory"].astype(str).isin(sub_factory_filter)]
+        filtered_df = filtered_df[filtered_df["Plan Sub Factory"].astype(str).isin(sub_factory_filter)]
     if sales_region_col and sales_region_filter:
         filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
@@ -276,7 +276,7 @@ with tab1:
     with kc3:
         st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
     with kc4:
-        st.metric("Sub Factories", filtered_df["Sub Factory"].nunique())
+        st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
 
     st.subheader("Volume Flow (From → Lead → Sub)")
 
@@ -296,7 +296,7 @@ with tab1:
     # Edge 2: Lead -> Sub (sum From_to_Sub_Pct across FM/subs)
     edges_lead_sub = (
         filtered_df
-        .groupby(["Plan Lead Factory", "Sub Factory"], as_index=False)["From_to_Sub_Pct"].sum()
+        .groupby(["Plan Lead Factory", "Plan Sub Factory"], as_index=False)["From_to_Sub_Pct"].sum()
         .rename(columns={"From_to_Sub_Pct": "value"})
     )
 
@@ -306,7 +306,7 @@ with tab1:
         edges_from_lead["Plan Lead Factory"].dropna(),
         edges_lead_sub["Plan Lead Factory"].dropna()
     ]).unique().tolist()
-    sub_nodes = edges_lead_sub["Sub Factory"].dropna().unique().tolist()
+    sub_nodes = edges_lead_sub["Plan Sub Factory"].dropna().unique().tolist()
 
     labels = from_nodes + lead_nodes + sub_nodes
     node_index = {label: i for i, label in enumerate(labels)}
@@ -320,7 +320,7 @@ with tab1:
 
     for _, row in edges_lead_sub.iterrows():
         s.append(node_index[row["Plan Lead Factory"]])
-        t.append(node_index[row["Sub Factory"]])
+        t.append(node_index[row["Plan Sub Factory"]])
         v.append(max(0.0, float(row["value"])))
 
     if len(labels) and len(v) and sum(v) > 0:
@@ -346,14 +346,14 @@ with tab1:
     st.subheader("Detailed Flow Table")
     flow_cols = [
         "FM", "Name", "Engine", "Emission",
-        "Factory today", "Plan Lead Factory", "Sub Factory",
+        "Factory today", "Plan Lead Factory", "Plan Sub Factory",
         "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
         "Coords_today", "Coords_lead", "Coords_sub"
     ]
     present_cols = [c for c in flow_cols if c in filtered_df.columns]
     st.dataframe(
         filtered_df[present_cols]
-        .sort_values(["Factory today", "Plan Lead Factory", "Sub Factory", "FM"], na_position="last"),
+        .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
         use_container_width=True
     )
 
@@ -364,8 +364,9 @@ with tab2:
     st.markdown("""
     - **From** sheet with: `FM`, `Name`, `Emission`, `Engine`, `Factory today`, `Latitude`, `Longitude`
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
-    - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
+    - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
