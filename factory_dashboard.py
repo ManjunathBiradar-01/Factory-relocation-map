@@ -285,8 +285,10 @@ import pydeck as pdk
 import pandas as pd
 
 # Use a standard location pin icon from Wikimedia
+# Add icon data to each marker
+# Use a standard location pin icon from Wikimedia
 icon_data = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",  # You can replace this with a pin icon
+    "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",  # Classic map pin icon
     "width": 128,
     "height": 128,
     "anchorY": 128
@@ -382,6 +384,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
