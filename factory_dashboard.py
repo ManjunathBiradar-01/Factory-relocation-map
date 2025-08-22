@@ -304,17 +304,15 @@ from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", 
 lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
 # Line data
+"IconLayer",
+data=arrow_df,
+get_icon="icon_data",
+get_size=4,
+size_scale=15,
+get_position="[lon, lat]",
+get_color=[255, 0, 0],
+pickable=True,
 
-
-    "IconLayer",
-    data=arrow_df,
-    get_icon="icon_data",
-    get_size=4,
-    size_scale=15,
-    get_position="[lon, lat]",
-    get_color=[255, 0, 0],
-    pickable=True,
-)
 
 
 lead_to_sub_lines = [
@@ -333,14 +331,14 @@ lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
 # Marker data
 
 pdk.Layer(
-    "IconLayer",
-    data=markers,
-    get_icon="icon_data",
-    get_size=4,
-    size_scale=15,
-    get_position="[lon, lat]",
-    get_color=[0, 128, 255],
-    pickable=True,
+"IconLayer",
+data=markers,
+get_icon="icon_data",
+get_size=4,
+size_scale=15,
+get_position="[lon, lat]",
+get_color=[0, 128, 255],
+pickable=True,
 )
 
 
@@ -405,6 +403,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
