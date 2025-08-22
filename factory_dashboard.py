@@ -153,8 +153,6 @@ with tab1:
 
 
 # Sidebar file uploader
-uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
-
 if uploaded_file is not None:
     try:
         # Load and merge data (your existing logic)
@@ -455,6 +453,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
