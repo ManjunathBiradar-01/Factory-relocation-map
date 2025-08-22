@@ -299,58 +299,83 @@ tab1, tab2 = st.tabs(["📍 Map View", "📝 Edit Dataset"])
 with tab1:
     st.subheader("Factory Flow Map")
 
-    # Filter out rows with missing coordinates
-    from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"])
-    lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
+# Combine flow lines and pinpoint markers
+from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"])
+lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
-    # Build line data
-    from_to_lead_lines = [
-        {
-            "from_lat": row["Lat_today"],
-            "from_lon": row["Lon_today"],
-            "to_lat": row["Lat_lead"],
-            "to_lon": row["Lon_lead"],
-            "label": f"{row['Factory today']} → {row['Plan Lead Factory']}"
-        }
-        for _, row in from_to_lead.iterrows()
-    ]
+# Line data
+from_to_lead_lines = [
+    {
+        "from_lat": row["Lat_today"],
+        "from_lon": row["Lon_today"],
+        "to_lat": row["Lat_lead"],
+        "to_lon": row["Lon_lead"],
+        "label": f"{row['Factory today']} → {row['Plan Lead Factory']}"
+    }
+    for _, row in from_to_lead.iterrows()
+]
 
-    lead_to_sub_lines = [
-        {
-            "from_lat": row["Lat_lead"],
-            "from_lon": row["Lon_lead"],
-            "to_lat": row["Lat_sub"],
-            "to_lon": row["Lon_sub"],
-            "label": f"{row['Plan Lead Factory']} → {row['Plan Sub Factory']}"
-        }
-        for _, row in lead_to_sub.iterrows()
-    ]
+lead_to_sub_lines = [
+    {
+        "from_lat": row["Lat_lead"],
+        "from_lon": row["Lon_lead"],
+        "to_lat": row["Lat_sub"],
+        "to_lon": row["Lon_sub"],
+        "label": f"{row['Plan Lead Factory']} → {row['Plan Sub Factory']}"
+    }
+    for _, row in lead_to_sub.iterrows()
+]
 
-    # Combine all lines
-    lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
+lines_df = pd.DataFrame(from_to_lead_lines + lead_to_sub_lines)
 
-    if not lines_df.empty:
-        line_layer = pdk.Layer(
-            "LineLayer",
-            data=lines_df,
-            get_source_position="[from_lon, from_lat]",
-            get_target_position="[to_lon, to_lat]",
-            get_width=3,
-            get_color=[255, 0, 0],
-            pickable=True,
-            auto_highlight=True
-        )
+# Marker data
+markers = pd.DataFrame([
+    {"lat": row["Lat_today"], "lon": row["Lon_today"], "label": f"Today: {row['Factory today']}"}
+    for _, row in filtered_df.iterrows()
+] + [
+    {"lat": row["Lat_lead"], "lon": row["Lon_lead"], "label": f"Lead: {row['Plan Lead Factory']}"}
+    for _, row in filtered_df.iterrows()
+] + [
+    {"lat": row["Lat_sub"], "lon": row["Lon_sub"], "label": f"Sub: {row['Plan Sub Factory']}"}
+    for _, row in filtered_df.iterrows()
+])
 
-        view_state = pdk.ViewState(
-            latitude=lines_df["from_lat"].mean(),
-            longitude=lines_df["from_lon"].mean(),
-            zoom=2,
-            pitch=0
-        )
+# Layers
+line_layer = pdk.Layer(
+    "LineLayer",
+    data=lines_df,
+    get_source_position="[from_lon, from_lat]",
+    get_target_position="[to_lon, to_lat]",
+    get_width=3,
+    get_color=[255, 0, 0],
+    pickable=True,
+    auto_highlight=True
+)
 
-       
-with open("map_with_lines_and_markers.html", "r") as f:
-    st.components.v1.html(f.read(), height=600)
+marker_layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=markers,
+    get_position="[lon, lat]",
+    get_color=[0, 128, 255],
+    get_radius=50000,
+    pickable=True
+)
+
+# View state
+view_state = pdk.ViewState(
+    latitude=markers["lat"].mean(),
+    longitude=markers["lon"].mean(),
+    zoom=2,
+    pitch=0
+)
+
+# Render map
+st.pydeck_chart(pdk.Deck(
+    layers=[line_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{label}"}
+))
+
 
 
     # ---- Detail table: per FM → Sub row with % ----
@@ -376,6 +401,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
