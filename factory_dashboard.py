@@ -301,11 +301,11 @@ for _, row in filtered_df.iterrows():
 vol_txt = f"{vol_num:.0f}%" if vol_num is not None else ("n/a" if pd.isna(vol_raw) else str(vol_raw))
 
 
-        from_name = (row.get("Factory today", "") or "").strip() or "n/a"
-        to_name   = (row.get("Plan Lead Factory", "") or "").strip() or "n/a"
+     from_name = (row.get("Factory today", "") or "").strip() or "n/a"
+     to_name   = (row.get("Plan Lead Factory", "") or "").strip() or "n/a"
 
-        tooltip_html = f"From: {from_name} → To: {to_name}<br>Volume Lead Plant: {vol_txt}"
-        popup_html   = (
+    tooltip_html = f"From: {from_name} → To: {to_name}<br>Volume Lead Plant: {vol_txt}"
+     popup_html   = (
             f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
             f"<b>Volume Lead Plant:</b> {vol_txt}"
         )
@@ -391,6 +391,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
