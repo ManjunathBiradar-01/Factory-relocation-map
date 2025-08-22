@@ -107,13 +107,16 @@ uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 if uploaded_file is not None:
     try:
         df = load_data(uploaded_file)
+    except Exception as e:
         st.error(f"Failed to load uploaded file. {e}")
         st.stop()
-except
+else:
     try:
         df = load_data("https://raw.githubusercontent.com/yourusername/yourrepo/main/Footprint_SDR.xlsx")
-        st.error(f"Failed to load default file from GitHub.{e}")
+    except Exception as e:
+        st.error(f"Failed to load default file from GitHub. {e}")
         st.stop()
+
 
     st.error(f"Failed to load data from '{excel_path}'.\n\n{e}")
     st.stop()
@@ -385,6 +388,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
