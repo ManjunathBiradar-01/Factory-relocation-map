@@ -379,19 +379,19 @@ st.pydeck_chart(pdk.Deck(
 
 
     # ---- Detail table: per FM → Sub row with % ----
-    st.subheader("Detailed Flow Table")
-    flow_cols = [
-        "FM", "Name", "Engine", "Emission",
-        "Factory today", "Plan Lead Factory", "Plan Sub Factory",
-        "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
-        "Coords_today", "Coords_lead", "Coords_sub"
-    ]
-    present_cols = [c for c in flow_cols if c in filtered_df.columns]
-    st.dataframe(
-        filtered_df[present_cols]
-        .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
-        use_container_width=True
-    )
+st.subheader("Detailed Flow Table")
+flow_cols = [
+    "FM", "Name", "Engine", "Emission",
+    "Factory today", "Plan Lead Factory", "Plan Sub Factory",
+    "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
+    "Coords_today", "Coords_lead", "Coords_sub"
+]
+present_cols = [c for c in flow_cols if c in filtered_df.columns]
+st.dataframe(
+    filtered_df[present_cols]
+    .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
+    use_container_width=True
+)
 
 with tab2:
     st.subheader("Edit Dataset")
@@ -401,6 +401,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
