@@ -94,7 +94,7 @@ def load_data(xlsx_file) -> pd.DataFrame:
         df_to_keep.append(lead_pct_col)
     df_to_keep = df_to[df_to_keep].copy()
 
-    df_sub_keep = ["FM", "Sub Factory", "Lat_sub", "Lon_sub"]
+    df_sub_keep = ["FM", "Plan Sub Factory", "Lat_sub", "Lon_sub"]
     if sub_pct_col:
         df_sub_keep.append(sub_pct_col)
     # If Sub sheet is given per FM only, allow duplicates; else it's fine.
@@ -366,6 +366,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
