@@ -42,7 +42,6 @@ def load_data(xlsx_file) -> pd.DataFrame:
     # ---- Read minimum sheets (NO 'Values' sheet used) ----
     df_from = read_sheet_any(xlsx_file, ["From"])
     df_to   = read_sheet_any(xlsx_file, ["To"])
-    # Try to locate the sub sheet with flexible names
     df_sub  = read_sheet_any(xlsx_file, ["Sub-Factory"])
 
     # Normalize column names
@@ -51,24 +50,22 @@ def load_data(xlsx_file) -> pd.DataFrame:
 
     # ---- Required columns validation ----
     # From
-    required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude"}
+    required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
     missing_from = required_from - set(df_from.columns)
     if missing_from:
         raise ValueError(f"'From' missing columns: {sorted(missing_from)}")
 
     # To
-    required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude"}
+    required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
     missing_to = required_to - set(df_to.columns)
     if missing_to:
         raise ValueError(f"'To' missing columns: {sorted(missing_to)}")
 
-    # Sub: name + coords (volume optional)
-    # Try to find a sub factory name column
-    sub_name_col = find_col(
-        df_sub,
-        ["Sub Factory", "Sub-Factory", "SubFactory", "Sub Plant", "Sub Plant Name", "Allocated Sub Factory"]
-    )
-    if not sub_name_col:
+    # sub
+    required_sub = {"FM", "Latitude", "Longitude", "SFC RTM", "Plan Sub Factory", "Volume", "Main sales region"}
+    missing_sub = required_to - set(df_to.columns)
+    if missing_to:
+        raise ValueError(f"'To' missing columns: {sorted(missing_sub)}")
         raise ValueError(
             "Could not find a Sub Factory name column in 'Sub' sheet. "
             "Expected one of: 'Sub Factory', 'Sub-Factory', 'SubFactory', 'Sub Plant', 'Allocated Sub Factory'."
@@ -369,6 +366,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
