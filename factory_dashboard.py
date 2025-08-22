@@ -280,26 +280,7 @@ with tab1:
 
     st.subheader("Volume Flow (From → Lead → Sub)")
 
-    # ---- Prepare Sankey data ----
-    # Edge 1: From -> Lead (sum Lead_Pct but avoid double counting the same FM repeated across subs)
-    # First deduplicate per FM for the From->Lead edge
-    dedup_from_lead = (
-        filtered_df[["FM", "Factory today", "Plan Lead Factory", "Lead_Pct"]]
-        .drop_duplicates(subset=["FM", "Factory today", "Plan Lead Factory"])
-    )
-    edges_from_lead = (
-        dedup_from_lead
-        .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["Lead_Pct"].sum()
-        .rename(columns={"Lead_Pct": "value"})
-    )
-
-    # Edge 2: Lead -> Sub (sum From_to_Sub_Pct across FM/subs)
-    edges_lead_sub = (
-        filtered_df
-        .groupby(["Plan Lead Factory", "Plan Sub Factory"], as_index=False)["From_to_Sub_Pct"].sum()
-        .rename(columns={"From_to_Sub_Pct": "value"})
-    )
-
+  
     # Build node list
     from_nodes = edges_from_lead["Factory today"].dropna().unique().tolist()
     lead_nodes = pd.concat([
@@ -406,6 +387,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
