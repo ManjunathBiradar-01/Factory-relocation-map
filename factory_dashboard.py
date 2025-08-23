@@ -285,21 +285,16 @@ with tab1:
 import pydeck as pdk
 
 # ---- Markers (pins with tooltips) ----
-markers = pd.DataFrame()
-
-# From factories
 from_markers = filtered_df.rename(columns={
     "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
 })[["lat","lon","name"]].dropna()
 from_markers["type"] = "From"
 
-# Lead factories
 lead_markers = filtered_df.rename(columns={
     "Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"
 })[["lat","lon","name"]].dropna()
 lead_markers["type"] = "Lead"
 
-# Sub factories
 sub_markers = filtered_df.rename(columns={
     "Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"
 })[["lat","lon","name"]].dropna()
@@ -307,14 +302,14 @@ sub_markers["type"] = "Sub"
 
 markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
-# Icon data for map pin
+# Icon data for map pin (safer to use PNG)
 icon_data = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",  # small red dot
     "width": 128,
     "height": 128,
     "anchorY": 128
 }
-markers["icon_data"] = [icon_data for _ in range(len(markers))]
+markers["icon_data"] = [icon_data] * len(markers)
 markers["label"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
 marker_layer = pdk.Layer(
@@ -333,7 +328,8 @@ def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template):
     trips["path"] = trips.apply(
         lambda r: [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]], axis=1
     )
-    trips["timestamps"] = [[0, 100] for _ in range(len(trips))]  # simple 0→100 timeline
+    # Must be flat list of ints, not nested lists
+    trips["timestamps"] = trips.apply(lambda _: [0, 100], axis=1)
     trips["label"] = trips.apply(label_template, axis=1)
     return trips
 
@@ -349,30 +345,32 @@ lead_to_sub = make_trips(
     lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}"
 )
 
+all_trips = pd.concat([from_to_lead, lead_to_sub], ignore_index=True)
+
 arrow_layer = pdk.Layer(
     "TripsLayer",
-    data=pd.concat([from_to_lead, lead_to_sub]),
+    data=all_trips,
     get_path="path",
     get_timestamps="timestamps",
     get_color=[255, 0, 0],
     width_min_pixels=3,
-    trail_length=100,
-    current_time=50,   # controls animation position
+    trail_length=50,     # how long arrow tail is
+    current_time=50,     # where animation is "paused"
     opacity=0.8,
     pickable=True
 )
 
 # ---- View ----
 view_state = pdk.ViewState(
-    latitude=markers["lat"].mean(),
-    longitude=markers["lon"].mean(),
+    latitude=markers["lat"].mean() if not markers.empty else 20,
+    longitude=markers["lon"].mean() if not markers.empty else 80,
     zoom=3,
     pitch=45
 )
 
 # ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],
+    layers=[arrow_layer, marker_layer],  # markers on top
     initial_view_state=view_state,
     tooltip={"text": "{label}"}
 ))
@@ -402,6 +400,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
