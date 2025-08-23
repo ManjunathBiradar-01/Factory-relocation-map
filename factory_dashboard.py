@@ -284,6 +284,9 @@ with tab1:
 # -------------------- Animated Map with Markers + Arrows --------------------
 import pydeck as pdk
 
+# -------------------- Animated Map with Markers + Arrows --------------------
+import pydeck as pdk
+
 # ---- Markers (pins with tooltips) ----
 from_markers = filtered_df.rename(columns={
     "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
@@ -302,9 +305,9 @@ sub_markers["type"] = "Sub"
 
 markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
-# Icon data for map pin (safer to use PNG)
+# Icon data
 icon_data = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",  # small red dot
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
     "width": 128,
     "height": 128,
     "anchorY": 128
@@ -322,20 +325,22 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
-# ---- Animated Arrows using TripsLayer ----
+# ---- Trips builder ----
 def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template, color):
-    trips = df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).copy()
-    # Each trip has exactly 2 points: start + end
-    trips["path"] = trips.apply(
-        lambda r: [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]], axis=1
-    )
-    # timestamps must match path length (2 points → 2 timestamps)
-    trips["timestamps"] = trips.apply(lambda _: [0, 100], axis=1)
-    trips["label"] = trips.apply(label_template, axis=1)
-    trips["color"] = [color] * len(trips)
-    return trips
+    trips = []
+    for _, r in df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).iterrows():
+        path = [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]]
+        timestamps = [0, 100]  # must match path length
+        label = label_template(r)
+        trips.append({
+            "path": path,
+            "timestamps": timestamps,
+            "label": label,
+            "color": color
+        })
+    return pd.DataFrame(trips)
 
-# From → Lead (blue arrows)
+# From → Lead (blue)
 from_to_lead = make_trips(
     filtered_df,
     "Lat_today","Lon_today","Lat_lead","Lon_lead",
@@ -343,7 +348,7 @@ from_to_lead = make_trips(
     [0, 0, 255]
 )
 
-# Lead → Sub (red arrows)
+# Lead → Sub (red)
 lead_to_sub = make_trips(
     filtered_df,
     "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
@@ -353,17 +358,17 @@ lead_to_sub = make_trips(
 
 all_trips = pd.concat([from_to_lead, lead_to_sub], ignore_index=True)
 
-# Add a slider to control the animation timeline
-current_time = st.slider("Animation time", 0, 100, 0)
+# Add timeline control
+current_time = st.slider("Animation time", 0, 100, 50)
 
 arrow_layer = pdk.Layer(
     "TripsLayer",
     data=all_trips,
     get_path="path",
     get_timestamps="timestamps",
-    get_color="color",     # now uses per-trip color
+    get_color="color",
     width_min_pixels=3,
-    trail_length=30,       # smaller = clearer arrow
+    trail_length=20,
     current_time=current_time,
     opacity=0.9,
     pickable=True
@@ -379,11 +384,10 @@ view_state = pdk.ViewState(
 
 # ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],  # markers drawn above arrows
+    layers=[arrow_layer, marker_layer],  # markers on top
     initial_view_state=view_state,
     tooltip={"text": "{label}"}
 ))
-
 
 
     # ---- Detail table: per FM → Sub row with % ----
@@ -409,6 +413,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
