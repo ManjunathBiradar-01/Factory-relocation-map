@@ -289,7 +289,63 @@ import pandas as pd
 # Use a standard location pin icon from Wikimedia
 
 
-# Sample marker data
+
+# Create markers from filtered_df
+markers = filtered_df.rename(columns={
+    'Lat_today': 'lat',
+    'Lon_today': 'lon',
+    'Factory today': 'name'
+})
+
+icon_data = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",
+    "width": 128,
+    "height": 128,
+    "anchorY": 128
+}
+markers["icon_data"] = [icon_data for _ in range(len(markers))]
+
+marker_layer = pdk.Layer(
+    "IconLayer",
+    data=markers,
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
+    get_position="[lon, lat]",
+    pickable=True
+)
+
+# Create arrows from today to lead factory
+lines_df = pd.DataFrame({
+    "path": filtered_df.apply(lambda row: [[row["Lon_today"], row["Lat_today"]], [row["Lon_lead"], row["Lat_lead"]]], axis=1),
+    "timestamps": [[0, 100] for _ in range(len(filtered_df))]
+})
+
+arrow_layer = pdk.Layer(
+    "TripsLayer",
+    data=lines_df,
+    get_path="path",
+    get_timestamps="timestamps",
+    get_color=[255, 0, 0],
+    opacity=0.8,
+    width_min_pixels=2,
+    trail_length=180,
+    current_time=50
+)
+
+view_state = pdk.ViewState(
+    latitude=filtered_df["Lat_today"].mean(),
+    longitude=filtered_df["Lon_today"].mean(),
+    zoom=5,
+    pitch=45
+)
+
+st.pydeck_chart(pdk.Deck(
+    layers=[arrow_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{name}"}
+))
+
 markers_data = {
     "lon": [-122.4, -122.5, -122.6],
     "lat": [37.8, 37.7, 37.6],
@@ -407,6 +463,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
