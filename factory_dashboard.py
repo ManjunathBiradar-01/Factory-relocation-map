@@ -281,56 +281,41 @@ with tab1:
     st.subheader("Volume Flow (From → Lead → Sub)")
 
 
-# -------------------- Map Visualization (Lead vs Sub paths) --------------------
+# -------------------- Animated Map with Markers + Arrows --------------------
 import pydeck as pdk
 
-# ---- Markers with tooltips ----
-from_info = filtered_df.groupby("Factory today").agg(
-    lat=("Lat_today","mean"), lon=("Lon_today","mean"),
-    sfc_rtm=("SFC RTM","sum")
-).reset_index().rename(columns={"Factory today":"name"})
-from_info["type"] = "From"
+# ---- Markers (pins with tooltips) ----
+markers = pd.DataFrame()
 
-lead_info = filtered_df.groupby("Plan Lead Factory").agg(
-    lat=("Lat_lead","mean"), lon=("Lon_lead","mean"),
-    sfc_rtm=("SFC RTM","sum")
-).reset_index().rename(columns={"Plan Lead Factory":"name"})
-lead_info["type"] = "Lead"
+# From factories
+from_markers = filtered_df.rename(columns={
+    "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
+})[["lat","lon","name"]].dropna()
+from_markers["type"] = "From"
 
-# ---- Sub factories info ----
-if "Volume" in filtered_df.columns:
-    # Convert to numeric and replace blanks/NaN with 0
-    filtered_df["Volume"] = pd.to_numeric(filtered_df["Volume"], errors="coerce").fillna(0)
+# Lead factories
+lead_markers = filtered_df.rename(columns={
+    "Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"
+})[["lat","lon","name"]].dropna()
+lead_markers["type"] = "Lead"
 
-    sub_info = filtered_df.groupby("Plan Sub Factory", dropna=True).agg(
-        lat=("Lat_sub","mean"),
-        lon=("Lon_sub","mean"),
-        sfc_rtm=("SFC RTM","sum"),
-        volume=("Volume","sum")
-    ).reset_index().rename(columns={"Plan Sub Factory":"name"})
-else:
-    sub_info = filtered_df.groupby("Plan Sub Factory", dropna=True).agg(
-        lat=("Lat_sub","mean"),
-        lon=("Lon_sub","mean"),
-        sfc_rtm=("SFC RTM","sum")
-    ).reset_index().rename(columns={"Plan Sub Factory":"name"})
+# Sub factories
+sub_markers = filtered_df.rename(columns={
+    "Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"
+})[["lat","lon","name"]].dropna()
+sub_markers["type"] = "Sub"
 
-sub_info["type"] = "Sub"
+markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
-
-markers = pd.concat([from_info, lead_info, sub_info]).dropna(subset=["lat","lon"])
-
-def make_label(row):
-    if row["type"] == "Sub":
-        return f"{row['name']} ({row['type']})\nSFC RTM: {row['sfc_rtm']:.0f}\nVolume: {row['volume']:.0f}"
-    else:
-        return f"{row['name']} ({row['type']})\nSFC RTM: {row['sfc_rtm']:.0f}"
-
-markers["label"] = markers.apply(make_label, axis=1)
-markers["icon_data"] = [{
+# Icon data for map pin
+icon_data = {
     "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",
-    "width": 128, "height": 128, "anchorY": 128
-}] * len(markers)
+    "width": 128,
+    "height": 128,
+    "anchorY": 128
+}
+markers["icon_data"] = [icon_data for _ in range(len(markers))]
+markers["label"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
 marker_layer = pdk.Layer(
     "IconLayer",
@@ -342,54 +327,56 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
-# ---- Paths ----
-# Solid: From → Lead
-from_to_lead = filtered_df.dropna(subset=["Lat_today","Lon_today","Lat_lead","Lon_lead"]).copy()
-from_to_lead["path"] = from_to_lead.apply(
-    lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1
+# ---- Animated Arrows using TripsLayer ----
+def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template):
+    trips = df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).copy()
+    trips["path"] = trips.apply(
+        lambda r: [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]], axis=1
+    )
+    trips["timestamps"] = [[0, 100] for _ in range(len(trips))]  # simple 0→100 timeline
+    trips["label"] = trips.apply(label_template, axis=1)
+    return trips
+
+# From → Lead
+from_to_lead = make_trips(
+    filtered_df, "Lat_today","Lon_today","Lat_lead","Lon_lead",
+    lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}"
 )
 
-lead_paths = pdk.Layer(
-    "PathLayer",
-    data=from_to_lead,
+# Lead → Sub
+lead_to_sub = make_trips(
+    filtered_df, "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
+    lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}"
+)
+
+arrow_layer = pdk.Layer(
+    "TripsLayer",
+    data=pd.concat([from_to_lead, lead_to_sub]),
     get_path="path",
-    get_color=[0, 0, 255],   # Blue solid
-    width_scale=20,
-    width_min_pixels=2,
-    get_width=3
+    get_timestamps="timestamps",
+    get_color=[255, 0, 0],
+    width_min_pixels=3,
+    trail_length=100,
+    current_time=50,   # controls animation position
+    opacity=0.8,
+    pickable=True
 )
 
-# Dashed: Lead → Sub
-lead_to_sub = filtered_df.dropna(subset=["Lat_lead","Lon_lead","Lat_sub","Lon_sub"]).copy()
-lead_to_sub["path"] = lead_to_sub.apply(
-    lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1
-)
-
-sub_paths = pdk.Layer(
-    "PathLayer",
-    data=lead_to_sub,
-    get_path="path",
-    get_color=[255, 0, 0],   # Red dashed
-    width_scale=20,
-    width_min_pixels=2,
-    get_width=3,
-    get_dash_array="[2,2]"   # <-- dashed line
-)
-
-# ---- Map view ----
+# ---- View ----
 view_state = pdk.ViewState(
     latitude=markers["lat"].mean(),
     longitude=markers["lon"].mean(),
     zoom=3,
-    pitch=30
+    pitch=45
 )
 
 # ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[marker_layer, lead_paths, sub_paths],
+    layers=[arrow_layer, marker_layer],
     initial_view_state=view_state,
     tooltip={"text": "{label}"}
 ))
+
 
 
     # ---- Detail table: per FM → Sub row with % ----
@@ -415,6 +402,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
