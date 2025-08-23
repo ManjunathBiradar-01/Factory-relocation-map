@@ -281,22 +281,40 @@ with tab1:
     st.subheader("Volume Flow (From → Lead → Sub)")
 
 
+# -------------------- Map Visualization --------------------
 import pydeck as pdk
-import pandas as pd
 
-# Use a standard location pin icon from Wikimedia
-# Add icon data to each marker
-# Use a standard location pin icon from Wikimedia
+# Prepare markers for all factory types
+markers = pd.DataFrame()
 
+# Current ("From") factories
+from_markers = filtered_df.rename(columns={
+    "Lat_today": "lat",
+    "Lon_today": "lon",
+    "Factory today": "name"
+})[["lat", "lon", "name"]]
+from_markers["type"] = "From"
 
+# Lead factories
+lead_markers = filtered_df.rename(columns={
+    "Lat_lead": "lat",
+    "Lon_lead": "lon",
+    "Plan Lead Factory": "name"
+})[["lat", "lon", "name"]]
+lead_markers["type"] = "Lead"
 
-# Create markers from filtered_df
-markers = filtered_df.rename(columns={
-    'Lat_today': 'lat',
-    'Lon_today': 'lon',
-    'Factory today': 'name'
-})
+# Sub factories
+sub_markers = filtered_df.rename(columns={
+    "Lat_sub": "lat",
+    "Lon_sub": "lon",
+    "Plan Sub Factory": "name"
+})[["lat", "lon", "name"]]
+sub_markers["type"] = "Sub"
 
+# Combine all markers
+markers = pd.concat([from_markers, lead_markers, sub_markers]).dropna(subset=["lat","lon"])
+
+# Icon for markers
 icon_data = {
     "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",
     "width": 128,
@@ -315,15 +333,23 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
-# Create arrows from today to lead factory
-lines_df = pd.DataFrame({
-    "path": filtered_df.apply(lambda row: [[row["Lon_today"], row["Lat_today"]], [row["Lon_lead"], row["Lat_lead"]]], axis=1),
-    "timestamps": [[0, 100] for _ in range(len(filtered_df))]
-})
+# Arrows: From → Lead
+from_to_lead = filtered_df.dropna(subset=["Lat_today","Lon_today","Lat_lead","Lon_lead"]).copy()
+from_to_lead["path"] = from_to_lead.apply(
+    lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1
+)
+from_to_lead["timestamps"] = [[0, 100] for _ in range(len(from_to_lead))]
+
+# Arrows: Lead → Sub
+lead_to_sub = filtered_df.dropna(subset=["Lat_lead","Lon_lead","Lat_sub","Lon_sub"]).copy()
+lead_to_sub["path"] = lead_to_sub.apply(
+    lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1
+)
+lead_to_sub["timestamps"] = [[0, 100] for _ in range(len(lead_to_sub))]
 
 arrow_layer = pdk.Layer(
     "TripsLayer",
-    data=lines_df,
+    data=pd.concat([from_to_lead[["path","timestamps"]], lead_to_sub[["path","timestamps"]]]),
     get_path="path",
     get_timestamps="timestamps",
     get_color=[255, 0, 0],
@@ -333,111 +359,20 @@ arrow_layer = pdk.Layer(
     current_time=50
 )
 
-view_state = pdk.ViewState(
-    latitude=filtered_df["Lat_today"].mean(),
-    longitude=filtered_df["Lon_today"].mean(),
-    zoom=5,
-    pitch=45
-)
-
-st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],
-    initial_view_state=view_state,
-    tooltip={"text": "{name}"}
-))
-
-markers_data = {
-    "lon": [-122.4, -122.5, -122.6],
-    "lat": [37.8, 37.7, 37.6],
-    "name": ["Location A", "Location B", "Location C"]
-}
-markers = pd.DataFrame(markers_data)
-
-icon_data = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",  # Classic map pin icon
-    "width": 128,
-    "height": 128,
-    "anchorY": 128
-}
-
-# Add icon data to each marker
-markers["icon_data"] = [icon_data for _ in range(len(markers))]
-
-# IconLayer for location markers
-marker_layer = pdk.Layer(
-    "IconLayer",
-    data=markers,
-    get_icon="icon_data",
-    get_size=4,
-    size_scale=15,
-    get_position="[lon, lat]",
-    pickable=True
-)
-
-
-
-lines_data = {
-    "from_lon": [-122.4, -122.5],
-    "from_lat": [37.8, 37.7],
-    "to_lon": [-122.5, -122.6],
-    "to_lat": [37.7, 37.6]
-}
-lines_df = pd.DataFrame(lines_data)
-
-
-
-# Prepare trips data for animated arrows
-lines_df["path"] = lines_df.apply(
-    lambda row: [[row["from_lon"], row["from_lat"]], [row["to_lon"], row["to_lat"]]],
-    axis=1
-)
-lines_df["timestamps"] = [[0, 100] for _ in range(len(lines_df))]
-
-# TripsLayer for animated arrows
-arrow_layer = pdk.Layer(
-    "TripsLayer",
-    data=lines_df,
-    get_path="path",
-    get_timestamps="timestamps",
-    get_color=[255, 0, 0],
-    opacity=0.8,
-    width_min_pixels=2,
-    trail_length=180,
-    current_time=50
-)
-
-# Deck setup
+# View centered on your factories
 view_state = pdk.ViewState(
     latitude=markers["lat"].mean(),
     longitude=markers["lon"].mean(),
-    zoom=5,
+    zoom=4,
     pitch=45
 )
 
-r = pdk.Deck(
+# Final render
+st.pydeck_chart(pdk.Deck(
     layers=[arrow_layer, marker_layer],
     initial_view_state=view_state,
-    tooltip={"text": "{name}"}
-)
-
-r.to_html("animated_map.html")
-
-# View state
-view_state = pdk.ViewState(
-    latitude=markers["lat"].mean(),
-    longitude=markers["lon"].mean(),
-    zoom=2,
-    pitch=0
-)
-
-# Render map
-st.pydeck_chart(pdk.Deck(
-    
-layers=[arrow_layer, marker_layer],
-initial_view_state=view_state,
-tooltip={"text": "{label}"}
+    tooltip={"text": "{name} ({type})"}
 ))
-
 
 
     # ---- Detail table: per FM → Sub row with % ----
@@ -463,6 +398,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
