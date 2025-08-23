@@ -297,12 +297,26 @@ lead_info = filtered_df.groupby("Plan Lead Factory").agg(
 ).reset_index().rename(columns={"Plan Lead Factory":"name"})
 lead_info["type"] = "Lead"
 
-sub_info = filtered_df.groupby("Plan Sub Factory").agg(
-    lat=("Lat_sub","mean"), lon=("Lon_sub","mean"),
-    sfc_rtm=("SFC RTM","sum"),
-    volume=("Volume","sum")
-).reset_index().rename(columns={"Plan Sub Factory":"name"})
+# ---- Sub factories info ----
+if "Volume" in filtered_df.columns:
+    # Convert to numeric and replace blanks/NaN with 0
+    filtered_df["Volume"] = pd.to_numeric(filtered_df["Volume"], errors="coerce").fillna(0)
+
+    sub_info = filtered_df.groupby("Plan Sub Factory", dropna=True).agg(
+        lat=("Lat_sub","mean"),
+        lon=("Lon_sub","mean"),
+        sfc_rtm=("SFC RTM","sum"),
+        volume=("Volume","sum")
+    ).reset_index().rename(columns={"Plan Sub Factory":"name"})
+else:
+    sub_info = filtered_df.groupby("Plan Sub Factory", dropna=True).agg(
+        lat=("Lat_sub","mean"),
+        lon=("Lon_sub","mean"),
+        sfc_rtm=("SFC RTM","sum")
+    ).reset_index().rename(columns={"Plan Sub Factory":"name"})
+
 sub_info["type"] = "Sub"
+
 
 markers = pd.concat([from_info, lead_info, sub_info]).dropna(subset=["lat","lon"])
 
@@ -401,6 +415,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
