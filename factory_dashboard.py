@@ -323,40 +323,49 @@ marker_layer = pdk.Layer(
 )
 
 # ---- Animated Arrows using TripsLayer ----
-def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template):
+def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template, color):
     trips = df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).copy()
+    # Each trip has exactly 2 points: start + end
     trips["path"] = trips.apply(
         lambda r: [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]], axis=1
     )
-    # Must be flat list of ints, not nested lists
+    # timestamps must match path length (2 points → 2 timestamps)
     trips["timestamps"] = trips.apply(lambda _: [0, 100], axis=1)
     trips["label"] = trips.apply(label_template, axis=1)
+    trips["color"] = [color] * len(trips)
     return trips
 
-# From → Lead
+# From → Lead (blue arrows)
 from_to_lead = make_trips(
-    filtered_df, "Lat_today","Lon_today","Lat_lead","Lon_lead",
-    lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}"
+    filtered_df,
+    "Lat_today","Lon_today","Lat_lead","Lon_lead",
+    lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}",
+    [0, 0, 255]
 )
 
-# Lead → Sub
+# Lead → Sub (red arrows)
 lead_to_sub = make_trips(
-    filtered_df, "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
-    lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}"
+    filtered_df,
+    "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
+    lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}",
+    [255, 0, 0]
 )
 
 all_trips = pd.concat([from_to_lead, lead_to_sub], ignore_index=True)
+
+# Add a slider to control the animation timeline
+current_time = st.slider("Animation time", 0, 100, 0)
 
 arrow_layer = pdk.Layer(
     "TripsLayer",
     data=all_trips,
     get_path="path",
     get_timestamps="timestamps",
-    get_color=[255, 0, 0],
+    get_color="color",     # now uses per-trip color
     width_min_pixels=3,
-    trail_length=50,     # how long arrow tail is
-    current_time=50,     # where animation is "paused"
-    opacity=0.8,
+    trail_length=30,       # smaller = clearer arrow
+    current_time=current_time,
+    opacity=0.9,
     pickable=True
 )
 
@@ -370,7 +379,7 @@ view_state = pdk.ViewState(
 
 # ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],  # markers on top
+    layers=[arrow_layer, marker_layer],  # markers drawn above arrows
     initial_view_state=view_state,
     tooltip={"text": "{label}"}
 ))
@@ -400,6 +409,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
