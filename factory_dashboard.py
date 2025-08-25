@@ -6,6 +6,10 @@ import io
 from datetime import datetime
 import plotly.graph_objects as go
 
+from datetime import datetime
+current_time = datetime.now()
+
+
 
 # -------------------- Data loader (single source of truth) --------------------
 @st.cache_data(show_spinner=False)
@@ -281,7 +285,6 @@ with tab1:
     st.subheader("Volume Flow (From → Lead → Sub)")
 
 
-# ... (all your previous code up to marker_layer and current_time definition) ...
 
 # -------------------- Animated Map with Markers + All-to-All Animated Arrows --------------------
 import pydeck as pdk
@@ -397,6 +400,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
