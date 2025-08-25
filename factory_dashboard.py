@@ -330,6 +330,12 @@ marker_layer = pdk.Layer(
 )
 
 # ---- All-to-All Animated Arrows ----
+
+# Filter only rows with positive flow
+
+filtered_df = filtered_df[filtered_df["From_to_Sub_Pct"] > 0]
+
+
 # Gather all unique locations
 all_points = pd.concat([
     filtered_df[["Lat_today", "Lon_today"]].rename(columns={"Lat_today": "lat", "Lon_today": "lon"}),
@@ -423,6 +429,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
