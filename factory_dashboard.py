@@ -292,90 +292,31 @@ with tab1:
 
 
 
+import pandas as pd
 import pydeck as pdk
+import streamlit as st
+import time
 
-# ---- Markers (pins with tooltips) ----
-from_markers = filtered_df.rename(columns={
-    "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
-})[["lat","lon","name"]].dropna()
+# Sample data (replace with your actual filtered_df)
+filtered_df = pd.DataFrame({
+    "Lat_today": [20.0], "Lon_today": [80.0], "Factory today": ["Factory A"],
+    "Lat_lead": [21.0], "Lon_lead": [81.0], "Plan Lead Factory": ["Lead A"],
+    "Lat_sub": [22.0], "Lon_sub": [82.0], "Plan Sub Factory": ["Sub A"],
+    "From_to_Sub_Pct": [100.0]
+})
+
+# ---- Markers ----
+from_markers = filtered_df.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"})[["lat", "lon", "name"]]
 from_markers["type"] = "From"
+from_markers["tooltip"] = from_markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
-lead_markers = filtered_df.rename(columns={
-    "Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"
-})[["lat","lon","name"]].dropna()
+lead_markers = filtered_df.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"})[["lat", "lon", "name"]]
 lead_markers["type"] = "Lead"
 
-sub_markers = filtered_df.rename(columns={
-    "Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"
-})[["lat","lon","name"]].dropna()
+sub_markers = filtered_df.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"})[["lat", "lon", "name"]]
 sub_markers["type"] = "Sub"
 
-markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
-
-# Icon data
-icon_data = {
-    "url": "https://cdn-icons-png.flaticon.com/512/684/684908.png",  # Location pin icon
-    "width": 128,
-    "height": 128,
-    "anchorY": 128
-}
-
-markers["icon_data"] = [icon_data] * len(markers)
-markers["label"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
-
-marker_layer = pdk.Layer(
-    "IconLayer",
-    data=markers,
-    get_icon="icon_data",
-    get_size=4,
-    size_scale=10,
-    get_position="[lon, lat]",
-    pickable=True
-)
-
-
-
-# Filter only rows with positive flow
-
-
-filtered_df = filtered_df[
-    (filtered_df["From_to_Sub_Pct"] > 0) &
-    (filtered_df["Lat_sub"] > 0) &
-    (filtered_df["Lon_sub"] > 0)
-]
-
-
-
-# Gather all unique locations
-all_points = pd.concat([
-    filtered_df[["Lat_today", "Lon_today"]].rename(columns={"Lat_today": "lat", "Lon_today": "lon"}),
-    filtered_df[["Lat_lead", "Lon_lead"]].rename(columns={"Lat_lead": "lat", "Lon_lead": "lon"}),
-    filtered_df[["Lat_sub", "Lon_sub"]].rename(columns={"Lat_sub": "lat", "Lon_sub": "lon"})
-], ignore_index=True).dropna().drop_duplicates()
-
-# All possible pairs (excluding self)
-# Filter only rows with positive flow
-# Filter only rows with positive flow
-filtered_df = filtered_df[filtered_df["From_to_Sub_Pct"] > 0]
-
-# Create connections from Factory today to Plan Lead Factory (blue)
-lead_connections = pd.DataFrame({
-    "path": filtered_df.apply(lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1),
-    "timestamps": [[0, 100]] * len(filtered_df),
-    "label": filtered_df.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1),
-    "color": [[0, 0, 255]] * len(filtered_df)  # Blue
-})
-
-# Create connections from Plan Lead Factory to Plan Sub Factory (green)
-sub_connections = pd.DataFrame({
-    "path": filtered_df.apply(lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1),
-    "timestamps": [[0, 100]] * len(filtered_df),
-    "label": filtered_df.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1),
-    "color": [[0, 255, 0]] * len(filtered_df)  # Green
-})
-
-
-# ---- Add tooltip with volume info ----
+# Volume info
 lead_volumes = filtered_df.groupby(["Factory today", "Plan Lead Factory"])["From_to_Sub_Pct"].sum().reset_index()
 lead_volumes["label"] = lead_volumes.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1)
 lead_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_lead"}, inplace=True)
@@ -384,64 +325,68 @@ sub_volumes = filtered_df.groupby(["Plan Lead Factory", "Plan Sub Factory"])["Fr
 sub_volumes["label"] = sub_volumes.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1)
 sub_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_sub"}, inplace=True)
 
-lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
-lead_connections["tooltip"] = lead_connections.apply(
-    lambda r: f"{r['label']}"
-"Volume to Lead: {:.2f}".format(r['volume_to_lead']) if pd.notnull(r['volume_to_lead']) else r['label'], axis=1
+# Merge volume info into markers
+lead_markers = lead_markers.merge(
+    lead_volumes.rename(columns={"Plan Lead Factory": "name", "volume_to_lead": "volume"}), on="name", how="left"
+)
+lead_markers["tooltip"] = lead_markers.apply(
+    lambda r: f"{r['name']} (Lead)\nVolume: {r['volume']:.2f}" if pd.notnull(r['volume']) else f"{r['name']} (Lead)", axis=1
 )
 
-sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
-sub_connections["tooltip"] = sub_connections.apply(
-    lambda r: f"{r['label']}"
-"Volume to Sub: {:.2f}".format(r['volume_to_sub']) if pd.notnull(r['volume_to_sub']) else r['label'], axis=1
+sub_markers = sub_markers.merge(
+    sub_volumes.rename(columns={"Plan Sub Factory": "name", "volume_to_sub": "volume"}), on="name", how="left"
 )
-all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
+sub_markers["tooltip"] = sub_markers.apply(
+    lambda r: f"{r['name']} (Sub)\nVolume: {r['volume']:.2f}" if pd.notnull(r['volume']) else f"{r['name']} (Sub)", axis=1
+)
 
-# Combine both connections
-all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
+# Combine all markers
+markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
-# Create the arrow layer with increased size and continuous animation
-
-placeholder = st.empty()
-
-
-for t in range(0, 100):
-
-    animated_arrow_layer = pdk.Layer(
-        "TripsLayer",
-        data=all_connections,
-        get_path="path",
-        get_timestamps="timestamps",
-        get_color="color",
-        width_min_pixels=6,
-        trail_length=150,
-        current_time=float(t),  # Animate over time
-        opacity=0.95,
-        pickable=True
-    )
-
-
-
-all_connections["icon_data"] = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Red_Arrow_Right.svg/120px-Red_Arrow_Right.svg.png",
-    "width": 120,
-    "height": 120,
-    "anchorY": 120
+# Icon data
+icon_data = {
+    "url": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+    "width": 128,
+    "height": 128,
+    "anchorY": 128
 }
+markers["icon_data"] = [icon_data] * len(markers)
 
-arrow_icon_layer = pdk.Layer(
+marker_layer = pdk.Layer(
     "IconLayer",
-    data=all_connections,
+    data=markers,
     get_icon="icon_data",
     get_size=4,
-    size_scale=15,
-    get_position="path[1]",
-    get_color="color",
-    pickable=True
+    size_scale=10,
+    get_position="[lon, lat]",
+    pickable=True,
+    get_tooltip="tooltip"
 )
 
+# ---- Connections ----
+lead_connections = pd.DataFrame({
+    "path": filtered_df.apply(lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1),
+    "timestamps": [[0, 100]] * len(filtered_df),
+    "label": filtered_df.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1),
+    "color": [[0, 0, 255]] * len(filtered_df)
+})
+lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
+lead_connections["tooltip"] = lead_connections.apply(
+    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'], axis=1
+)
 
+sub_connections = pd.DataFrame({
+    "path": filtered_df.apply(lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1),
+    "timestamps": [[0, 100]] * len(filtered_df),
+    "label": filtered_df.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1),
+    "color": [[0, 255, 0]] * len(filtered_df)
+})
+sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
+sub_connections["tooltip"] = sub_connections.apply(
+    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'], axis=1
+)
 
+all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
 
 # ---- View ----
 view_state = pdk.ViewState(
@@ -451,9 +396,8 @@ view_state = pdk.ViewState(
     pitch=45
 )
 
-
-
-
+# ---- Streamlit Visualization ----
+st.set_page_config(layout="wide")
 placeholder = st.empty()
 
 for t in range(0, 100):
@@ -467,19 +411,19 @@ for t in range(0, 100):
         trail_length=20,
         current_time=float(t),
         opacity=0.7,
-        pickable=True
+        pickable=True,
+        get_tooltip="tooltip"
     )
 
-deck = pdk.Deck(
-    layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
-    initial_view_state=view_state,
-    tooltip={"text": "{label}"},
-    map_style="light"
-)
+    deck = pdk.Deck(
+        layers=[animated_arrow_layer, marker_layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{tooltip}"},
+        map_style="light"
+    )
 
-placeholder.pydeck_chart(deck)
-time.sleep(0.1)
-
+    placeholder.pydeck_chart(deck)
+    time.sleep(0.1)
 
 
 
@@ -506,6 +450,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
