@@ -400,18 +400,6 @@ for t in range(0, 100):
 
 
 
-    deck = pdk.Deck(
-        layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
-        initial_view_state=view_state,
-        tooltip={"text": "{label}"},
-        map_style="light"
-    )
-
-    placeholder.pydeck_chart(deck)
-    time.sleep(0.1)
-
-
-
 all_connections["icon_data"] = {
     "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Red_Arrow_Right.svg/120px-Red_Arrow_Right.svg.png",
     "width": 120,
@@ -467,10 +455,8 @@ deck = pdk.Deck(
     map_style="light"
 )
 
-
 placeholder.pydeck_chart(deck)
 time.sleep(0.1)
-
 
 
 
@@ -498,6 +484,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
