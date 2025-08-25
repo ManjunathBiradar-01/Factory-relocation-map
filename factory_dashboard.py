@@ -377,26 +377,36 @@ all_connections = pd.concat([lead_connections, sub_connections], ignore_index=Tr
 
 
 
-line_layer = pdk.Layer(
-    "LineLayer",
+animated_arrow_layer = pdk.Layer(
+    "TripsLayer",
     data=all_connections,
-    get_source_position="path[0]",
-    get_target_position="path[1]",
+    get_path="path",
+    get_timestamps="timestamps",
     get_color="color",
-    get_width=5,
+    width_min_pixels=6,
+    trail_length=150,
+    current_time=float(t),  # Animate over time
+    opacity=0.95,
     pickable=True
 )
 
 
+all_connections["icon_data"] = {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Red_Arrow_Right.svg/120px-Red_Arrow_Right.svg.png",
+    "width": 120,
+    "height": 120,
+    "anchorY": 120
+}
 
-arrow_layer = pdk.Layer(
-    "ScatterplotLayer",
+arrow_icon_layer = pdk.Layer(
+    "IconLayer",
     data=all_connections,
-    get_position="path[1]",  # Arrowhead at destination
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
+    get_position="path[1]",
     get_color="color",
-    get_radius=10000,        # Size of arrowhead
-    radius_min_pixels=5,
-    radius_max_pixels=10
+    pickable=True
 )
 
 
@@ -435,7 +445,7 @@ for t in range(0, 100):
     )
 
 deck = pdk.Deck(
-    layers=[line_layer, arrow_layer, marker_layer],
+    layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
     initial_view_state=view_state,
     tooltip={"text": "{label}"},
     map_style="light"
@@ -472,6 +482,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
