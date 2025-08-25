@@ -149,19 +149,8 @@ if "uploaded_file" in st.session_state:
 if "uploaded_file" in st.session_state:
     try:
         df = load_data(st.session_state["uploaded_file"])
-        st.sidebar.success(f"Using uploaded file: {st.session_state['uploaded_file'].name}")
-    except Exception as e:
-        st.error(f"Failed to load uploaded data: {e}")
-        st.stop()
-else:
-    # Fallback: default dataset from GitHub
-    default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
-    try:
-        df = load_data(default_url)
-        st.sidebar.info("Using default dataset from GitHub (upload Excel to override).")
-    except Exception as e:
-        st.error(f"Failed to load default file from GitHub: {e}")
-        st.stop()
+        st.sidebar.success(f"Using uploaded file: {
+
 
 # ---------------- Dashboard starts here (outside if/else) ----------------
 st.title("Factory Production Relocation Dashboard")
@@ -412,6 +401,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
