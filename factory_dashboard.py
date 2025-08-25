@@ -316,7 +316,7 @@ tooltip = {
 
 # Final rendering
 markers = aggregate_marker_data(filtered_df)
-arrows_main_to_lead, arrows_lead_to_sub = create_arrow_data(filtered_df)
+arrows_main_to_lead = create_arrow_data(filtered_df)
 view_state = pdk.ViewState(latitude=markers["lat"].mean(), longitude=markers["lon"].mean(), zoom=3, pitch=35)
 
 st.pydeck_chart(pdk.Deck(
@@ -400,7 +400,7 @@ tooltip = {
 
 # Final rendering
 markers = aggregate_marker_data(filtered_df)
-arrows_main_to_lead, arrows_lead_to_sub = create_arrow_data(filtered_df)
+arrows_lead_to_sub = create_arrow_data(filtered_df)
 view_state = pdk.ViewState(latitude=markers["lat"].mean(), longitude=markers["lon"].mean(), zoom=3, pitch=35)
 
 st.pydeck_chart(pdk.Deck(
@@ -432,6 +432,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
