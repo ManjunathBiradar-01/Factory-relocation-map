@@ -6,8 +6,9 @@ import io
 from datetime import datetime
 import plotly.graph_objects as go
 
+
 from datetime import datetime
-current_time = datetime.now()
+current_time = datetime.now().timestamp()  
 
 
 
@@ -400,6 +401,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
