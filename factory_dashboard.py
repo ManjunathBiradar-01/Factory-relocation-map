@@ -134,20 +134,28 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
 st.sidebar.subheader("Data")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
+# --- Handle uploaded file with session_state ---
 if uploaded_file is not None:
+    # Save file in session_state so it persists
+    st.session_state["uploaded_file"] = uploaded_file
+
+if "uploaded_file" in st.session_state:
     try:
-        df = load_data(uploaded_file)
+        df = load_data(st.session_state["uploaded_file"])
+        st.sidebar.success(f"Using uploaded file: {st.session_state['uploaded_file'].name}")
     except Exception as e:
-        st.error(f"Failed to load data: {e}")
+        st.error(f"Failed to load uploaded data: {e}")
         st.stop()
 else:
+    # Fallback: default dataset from GitHub
     default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
     try:
         df = load_data(default_url)
-        st.sidebar.info("Using default dataset from GitHub (upload 'Footprint_SDR 4.xlsx' to override).")
+        st.sidebar.info("Using default dataset from GitHub (upload 'Footprint_SDR.xlsx' to override).")
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
+
 
 
 
@@ -423,6 +431,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
