@@ -276,17 +276,25 @@ def aggregate_main_to_lead_markers(df):
     return markers
 
 def create_main_to_lead_trips(df):
-    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]).copy()
-    df["path"] = df.apply(lambda row: [
+    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead_Pct"]).copy()
+    df = df[df["Lead_Pct"] > 0]  # Only include rows with volume > 0
+
+    # Group by route to get total volume
+    grouped = df.groupby([
+        "Factory today", "Plan Lead Factory", "Lat_today", "Lon_today", "Lat_lead", "Lon_lead"
+    ], as_index=False).agg({"Lead_Pct": "sum"})
+
+    grouped["path"] = grouped.apply(lambda row: [
         [row["Lon_today"], row["Lat_today"]],
         [row["Lon_lead"], row["Lat_lead"]]
     ], axis=1)
-    df["timestamps"] = [[0, 100]] * len(df)  # Simulated time steps
-    df["color"] = [[255, 140, 0]] * len(df)
-    df["name"] = df["Factory today"] + " → " + df["Plan Lead Factory"]
-    df["volume"] = df["Lead_Pct"]
-    df["type"] = "Lead Volume Shifted"
-    return df
+    grouped["timestamps"] = [[0, 100]] * len(grouped)
+    grouped["color"] = [[255, 140, 0]] * len(grouped)
+    grouped["name"] = grouped["Factory today"] + " → " + grouped["Plan Lead Factory"]
+    grouped["volume"] = grouped["Lead_Pct"]
+    grouped["type"] = "Lead Volume Shifted"
+    return grouped
+
 
 # ---- Map 2: Lead Factory → Sub Factory ----
 def aggregate_lead_to_sub_markers(df):
@@ -400,6 +408,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
