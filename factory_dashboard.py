@@ -374,18 +374,31 @@ sub_connections = pd.DataFrame({
 all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
 
 # Create the arrow layer with increased size and continuous animation
-arrow_layer = pdk.Layer(
-    "TripsLayer",
+
+
+
+line_layer = pdk.Layer(
+    "LineLayer",
     data=all_connections,
-    get_path="path",
-    get_timestamps="timestamps",
+    get_source_position="path[0]",
+    get_target_position="path[1]",
     get_color="color",
-    width_min_pixels=5,  # Increased arrow size
-    trail_length=100,    # Longer trail for continuous effect
-    current_time=datetime.now().timestamp(),
-    opacity=0.9,
+    get_width=5,
     pickable=True
 )
+
+
+
+arrow_layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=all_connections,
+    get_position="path[1]",  # Arrowhead at destination
+    get_color="color",
+    get_radius=10000,        # Size of arrowhead
+    radius_min_pixels=5,
+    radius_max_pixels=10
+)
+
 
 
 
@@ -421,12 +434,13 @@ for t in range(0, 100):
         pickable=True
     )
 
-    deck = pdk.Deck(
-        layers=[animated_arrow_layer, marker_layer],
-        initial_view_state=view_state,
-        tooltip={"text": "{label}"},
-        map_style="light"
-    )
+deck = pdk.Deck(
+    layers=[line_layer, arrow_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{label}"},
+    map_style="light"
+)
+
 
 placeholder.pydeck_chart(deck)
 time.sleep(0.1)
@@ -458,6 +472,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
