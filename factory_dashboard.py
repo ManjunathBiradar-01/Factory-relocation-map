@@ -401,30 +401,29 @@ import time
 
 placeholder = st.empty()
 
-while True:
-    for t in range(0, 100):
-        animated_arrow_layer = pdk.Layer(
-            "TripsLayer",
-            data=all_connections,
-            get_path="path",
-            get_timestamps="timestamps",
-            get_color="color",
-            width_min_pixels=2,
-            trail_length=20,
-            current_time=float(t),
-            opacity=0.7,
-            pickable=True
-        )
+for t in range(0, 100):
+    animated_arrow_layer = pdk.Layer(
+        "TripsLayer",
+        data=all_connections,
+        get_path="path",
+        get_timestamps="timestamps",
+        get_color="color",
+        width_min_pixels=2,
+        trail_length=20,
+        current_time=float(t),
+        opacity=0.7,
+        pickable=True
+    )
 
-        deck = pdk.Deck(
-            layers=[animated_arrow_layer, marker_layer],
-            initial_view_state=view_state,
-            tooltip={"text": "{label}"},
-            map_style="light"
-        )
+    deck = pdk.Deck(
+        layers=[animated_arrow_layer, marker_layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{label}"},
+        map_style="light"
+    )
 
-    placeholder.pydeck_chart(deck)
-    time.sleep(0.1)
+placeholder.pydeck_chart(deck)
+time.sleep(0.1)
 
 
 
@@ -453,6 +452,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
