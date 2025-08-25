@@ -1,35 +1,12 @@
 import pandas as pd
 import numpy as np
-import folium
 import streamlit as st
-import io
 from datetime import datetime
-import plotly.graph_objects as go
-import time
-
-import streamlit as st
 import pydeck as pdk
-import time
-
-
-from datetime import datetime
-current_time = datetime.now().timestamp()  
-
-
 
 # -------------------- Data loader (single source of truth) --------------------
 @st.cache_data(show_spinner=False)
 def load_data(xlsx_file) -> pd.DataFrame:
-    """
-    Loads and merges the required sheets:
-      - From (original location data)
-      - To (lead factory coordinates & optional %)
-      - Sub (sub factory coordinates & optional %)
-    Performs validations and returns a merged long DataFrame with per-sub rows.
-    Accepts both file-like objects (Streamlit UploadedFile) and file paths/URLs.
-    """
-
-    # ---- Helper: read a sheet by any of several possible names ----
     def read_sheet_any(file, candidates: list[str]) -> pd.DataFrame:
         last_err = None
         for name in candidates:
@@ -41,7 +18,6 @@ def load_data(xlsx_file) -> pd.DataFrame:
             f"Could not find any of these sheets: {candidates}. Last error: {last_err}"
         )
 
-    # ---- Helper: column finder (first match from a set of candidates) ----
     def find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
         norm = {c.lower().strip(): c for c in df.columns}
         for x in candidates:
@@ -49,50 +25,40 @@ def load_data(xlsx_file) -> pd.DataFrame:
                 return norm[x.lower().strip()]
         return None
 
-    # ---- Read minimum sheets (NO 'Values' sheet used) ----
+    # ---- Read minimum sheets ----
     df_from = read_sheet_any(xlsx_file, ["From"])
     df_to   = read_sheet_any(xlsx_file, ["To"])
     df_sub  = read_sheet_any(xlsx_file, ["Sub-Factory"])
 
-    # Normalize column names
     for d in (df_from, df_to, df_sub):
         d.columns = d.columns.str.strip()
 
     # ---- Required columns validation ----
-    # From
     required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
     missing_from = required_from - set(df_from.columns)
     if missing_from:
         raise ValueError(f"'From' missing columns: {sorted(missing_from)}")
 
-    # To
     required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
     missing_to = required_to - set(df_to.columns)
     if missing_to:
         raise ValueError(f"'To' missing columns: {sorted(missing_to)}")
 
-    # sub
     required_sub = {"FM", "Latitude", "Longitude", "SFC RTM", "Plan Sub Factory", "Volume", "Main sales region"}
-    missing_sub = required_to - set(df_to.columns)
-    if missing_to:
-        raise ValueError(f"'To' missing columns: {sorted(missing_sub)}")
-        raise ValueError(
-            "Could not find a Sub Factory name column in 'Sub' sheet. "
-            "Expected one of: 'Sub Factory', 'Sub-Factory', 'SubFactory', 'Sub Plant', 'Allocated Sub Factory'."
-        )
+    missing_sub = required_sub - set(df_sub.columns)
+    if missing_sub:
+        raise ValueError(f"'Sub' missing columns: {sorted(missing_sub)}")
 
     # ---- Rename coordinates to avoid collisions ----
     df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
     df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead"})
-    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",  "Longitude": "Lon_sub"})
+    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",   "Longitude": "Lon_sub"})
 
     # ---- Detect optional volume columns ----
-    # Lead % candidates (in 'To')
     lead_pct_col = find_col(df_to, [
         "Volume Lead Plant (%)", "Lead Volume (%)", "Lead Allocation (%)",
         "Lead %", "Lead Percent", "Volume (%)", "Volume"
     ])
-    # Sub % candidates (in 'Sub')
     sub_pct_col = find_col(df_sub, [
         "Volume Sub (%)", "Sub Volume (%)", "Sub Allocation (%)", "Sub %",
         "Volume (%)", "Volume"
@@ -107,12 +73,10 @@ def load_data(xlsx_file) -> pd.DataFrame:
     df_sub_keep = ["FM", "Plan Sub Factory", "Lat_sub", "Lon_sub"]
     if sub_pct_col:
         df_sub_keep.append(sub_pct_col)
-    # If Sub sheet is given per FM only, allow duplicates; else it's fine.
     df_sub_keep = df_sub[df_sub_keep].copy()
 
     # ---- Merge From + To (one-to-one on FM) ----
     merged = df_from.merge(df_to_keep, on="FM", how="left")
-
     # ---- Attach Sub (one-to-many on FM) ----
     merged = merged.merge(df_sub_keep, on="FM", how="left", suffixes=("", "_sub"))
 
@@ -120,44 +84,35 @@ def load_data(xlsx_file) -> pd.DataFrame:
     for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]:
         merged[c] = pd.to_numeric(merged[c], errors="coerce")
 
-    # ---- Compute % flows (no Values sheet) ----
-    # Lead_Pct
+    # ---- Compute % flows ----
     if lead_pct_col and lead_pct_col in merged.columns:
         merged["Lead_Pct"] = pd.to_numeric(merged[lead_pct_col], errors="coerce")
     else:
-        # Default: 100% from -> lead if not specified
         merged["Lead_Pct"] = 100.0
 
-    # Sub_Pct
     if sub_pct_col and sub_pct_col in merged.columns:
         merged["Sub_Pct"] = pd.to_numeric(merged[sub_pct_col], errors="coerce")
     else:
-        # If no sub percentage is provided:
-        # - If an FM has N sub factories, split equally (100/N) for that FM.
-        # - If an FM has exactly 1 sub or none, set 100% to that single sub (or NaN sub means no split).
-        # Compute counts per FM where Sub Factory is present
+        # If no sub percentage: split equally among sub factories per FM
         counts = (
-            merged.assign(has_sub=merged["Sub Factory"].notna())
+            merged.assign(has_sub=merged["Plan Sub Factory"].notna())
                   .groupby("FM", dropna=False)["has_sub"].sum()
                   .rename("n_sub")
         )
         merged = merged.merge(counts, on="FM", how="left")
         def _infer_sub_pct(row):
-            if pd.isna(row.get("Sub Factory")):
-                # no sub designated: treat as 100% at lead with no further split
+            if pd.isna(row.get("Plan Sub Factory")):
                 return 100.0
             n = row.get("n_sub", 0)
             return 100.0 / n if n and n > 0 else 100.0
         merged["Sub_Pct"] = merged.apply(_infer_sub_pct, axis=1)
         merged.drop(columns=["n_sub"], inplace=True, errors="ignore")
 
-    # Overall From->Sub %
     merged["From_to_Sub_Pct"] = (merged["Lead_Pct"].fillna(0) * merged["Sub_Pct"].fillna(0)) / 100.0
 
     return merged
 
-
-# -------------------- Helper: find 'Sales Region' column (unchanged) --------------------
+# -------------------- Helper: find 'Sales Region' column --------------------
 def find_sales_region_col(columns) -> str | None:
     normalized = {c.lower().strip(): c for c in columns}
     candidates = [
@@ -173,13 +128,11 @@ def find_sales_region_col(columns) -> str | None:
             return c
     return None
 
-
-# -------------------- Small utility: format coordinates (unchanged) --------------------
+# -------------------- Small utility: format coordinates --------------------
 def format_coords(lat, lon, decimals: int = 5) -> str:
     if pd.notnull(lat) and pd.notnull(lon):
         return f"{lat:.{decimals}f}, {lon:.{decimals}f}"
     return "n/a"
-
 
 # -------------------- File Upload --------------------
 st.sidebar.subheader("Data")
@@ -192,7 +145,6 @@ if uploaded_file is not None:
         st.error(f"Failed to load data: {e}")
         st.stop()
 else:
-    # Fallback (keep your GitHub default or upload your 'Footprint_SDR 4.xlsx')
     default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
     try:
         df = load_data(default_url)
@@ -200,7 +152,6 @@ else:
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
-
 
 # -------------------- Tabs --------------------
 tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
@@ -233,7 +184,6 @@ with tab1:
             sorted(df["Emission"].dropna().astype(str).unique())
         )
 
-    # NEW: Lead & Sub factory filters
     c5, c6 = st.columns(2)
     with c5:
         lead_filter = st.multiselect(
@@ -290,152 +240,94 @@ with tab1:
 
     st.subheader("Volume Flow (From → Lead → Sub)")
 
+    # ---- Map Visualization (Static) ----
+    # Markers for each location
+    markers = pd.DataFrame()
+    if not filtered_df.empty:
+        from_markers = filtered_df.rename(columns={
+            "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
+        })[["lat", "lon", "name"]].copy()
+        from_markers["type"] = "From"
 
+        lead_markers = filtered_df.rename(columns={
+            "Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"
+        })[["lat", "lon", "name"]].copy()
+        lead_markers["type"] = "Lead"
 
-import pandas as pd
-import pydeck as pdk
-import streamlit as st
-import time
+        sub_markers = filtered_df.rename(columns={
+            "Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"
+        })[["lat", "lon", "name"]].copy()
+        sub_markers["type"] = "Sub"
 
-# Sample data (replace with your actual filtered_df)
-filtered_df = pd.DataFrame({
-    "Lat_today": [20.0], "Lon_today": [80.0], "Factory today": ["Factory A"],
-    "Lat_lead": [21.0], "Lon_lead": [81.0], "Plan Lead Factory": ["Lead A"],
-    "Lat_sub": [22.0], "Lon_sub": [82.0], "Plan Sub Factory": ["Sub A"],
-    "From_to_Sub_Pct": [100.0]
-})
+        markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
+        markers = markers.drop_duplicates(subset=["lat", "lon", "name", "type"])
 
-# ---- Markers ----
-# Create marker DataFrames
-from_markers = filtered_df.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"})[["lat", "lon", "name"]]
-from_markers["type"] = "From"
+        # Static connections: From → Lead, Lead → Sub
+        from_to_lead = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"])
+        lead_to_sub = filtered_df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
-lead_markers = filtered_df.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"})[["lat", "lon", "name"]]
-lead_markers["type"] = "Lead"
+        line_data = []
+        for _, row in from_to_lead.iterrows():
+            line_data.append({
+                "path": [[row["Lon_today"], row["Lat_today"]], [row["Lon_lead"], row["Lat_lead"]]],
+                "color": [255, 140, 0]
+            })
+        for _, row in lead_to_sub.iterrows():
+            line_data.append({
+                "path": [[row["Lon_lead"], row["Lat_lead"]], [row["Lon_sub"], row["Lat_sub"]]],
+                "color": [0, 140, 255]
+            })
 
-sub_markers = filtered_df.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"})[["lat", "lon", "name"]]
-sub_markers["type"] = "Sub"
+        # Prepare map view state
+        if not markers.empty:
+            view_state = pdk.ViewState(
+                latitude=markers["lat"].mean(),
+                longitude=markers["lon"].mean(),
+                zoom=3,
+                pitch=35
+            )
+        else:
+            view_state = pdk.ViewState(latitude=20, longitude=80, zoom=3, pitch=35)
 
-# Combine all markers
-markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
-
-# Apply tooltip logic safely
-if "name" in markers.columns and "type" in markers.columns:
-    markers["tooltip"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
-else:
-    markers["tooltip"] = "Unknown"
-
-
-
-
-# Merge volume info into markers
-lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
-lead_connections["tooltip"] = lead_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'],
-    axis=1
-)
-
-
-sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
-sub_connections["tooltip"] = sub_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'],
-    axis=1
-)
-
-# Combine all markers
-markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
-
-# Icon data
-icon_data = {
-    "url": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-    "width": 128,
-    "height": 128,
-    "anchorY": 128
-}
-markers["icon_data"] = [icon_data] * len(markers)
-
-
-
-
-# ---- Connections ----
-lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
-lead_connections["tooltip"] = lead_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'],
-    axis=1
-)
-
-sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
-sub_connections["tooltip"] = sub_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'],
-    axis=1
-)
-
-sub_connections = pd.DataFrame({
-    "path": filtered_df.apply(lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1),
-    "timestamps": [[0, 100]] * len(filtered_df),
-    "label": filtered_df.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1),
-    "color": [[0, 255, 0]] * len(filtered_df)
-})
-sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
-sub_connections["tooltip"] = sub_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'], axis=1
-)
-
-all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
-
-# ---- View ----
-view_state = pdk.ViewState(
-    latitude=markers["lat"].mean() if not markers.empty else 20,
-    longitude=markers["lon"].mean() if not markers.empty else 80,
-    zoom=3,
-    pitch=45
-)
-
-# ---- Streamlit Visualization ----
-st.set_page_config(layout="wide")
-placeholder = st.empty()
-
-for t in range(0, 100):
-    animated_arrow_layer = pdk.Layer(
-    "TripsLayer",
-    data=all_connections,
-    get_path="path",
-    get_timestamps="timestamps",
-    get_color="color",
-    width_min_pixels=2,
-    trail_length=20,
-    current_time=float(t),
-    opacity=0.7,
-    pickable=True,
-    get_tooltip="tooltip"
-)
-
-    deck = pdk.Deck(
-    layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
-    initial_view_state=view_state,
-    tooltip={"text": "{tooltip}"},
-    map_style="light"
-)
-
-placeholder.pydeck_chart(deck)
-time.sleep(0.1)
-
-
+        # Layers for markers and connections
+        marker_layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=markers,
+            get_position='[lon, lat]',
+            get_fill_color='[type == "From" ? 255 : type == "Lead" ? 0 : 0, type == "From" ? 0 : type == "Lead" ? 255 : 0, 140]',
+            get_radius=70000,
+            pickable=True,
+            tooltip=True
+        )
+        line_layer = pdk.Layer(
+            "PathLayer",
+            data=line_data,
+            get_path="path",
+            get_color="color",
+            width_scale=20,
+            width_min_pixels=3,
+            pickable=False
+        )
+        st.pydeck_chart(pdk.Deck(
+            layers=[marker_layer, line_layer],
+            initial_view_state=view_state,
+            tooltip={"text": "{name} ({type})"}
+        ))
 
     # ---- Detail table: per FM → Sub row with % ----
-st.subheader("Detailed Flow Table")
-flow_cols = [
-    "FM", "Name", "Engine", "Emission",
-    "Factory today", "Plan Lead Factory", "Plan Sub Factory",
-    "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
-    "Coords_today", "Coords_lead", "Coords_sub"
-]
-present_cols = [c for c in flow_cols if c in filtered_df.columns]
-st.dataframe(
-    filtered_df[present_cols]
-    .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
-    use_container_width=True
-)
+    st.subheader("Detailed Flow Table")
+    flow_cols = [
+        "FM", "Name", "Engine", "Emission",
+        "Factory today", "Plan Lead Factory", "Plan Sub Factory",
+        "Lead_Pct", "Sub_Pct", "From_to_Sub_Pct",
+        "Coords_today", "Coords_lead", "Coords_sub"
+    ]
+    present_cols = [c for c in flow_cols if c in filtered_df.columns]
+    st.dataframe(
+        filtered_df[present_cols]
+        .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
+        use_container_width=True
+    )
 
 with tab2:
     st.subheader("Edit Dataset")
@@ -445,131 +337,3 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
