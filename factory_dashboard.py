@@ -421,8 +421,8 @@ st.pydeck_chart(
 )
 
 
-    placeholder.pydeck_chart(deck)
-    time.sleep(0.1)
+placeholder.pydeck_chart(deck)
+time.sleep(0.1)
 
 
 # ... (rest of your script, e.g. Detailed Flow Table, Edit Dataset tab, etc.) ...
@@ -450,6 +450,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
