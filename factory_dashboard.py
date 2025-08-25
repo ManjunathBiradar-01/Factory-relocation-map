@@ -245,7 +245,7 @@ st.title("Animated Arrows: Factory Relocation Maps")
 
 # ---- Tooltip ----
 tooltip = {
-    "html": "<b>{name}</b><br/>{type}<br/>Volume: {Volume}",
+    "html": "<b>{name}</b><br/>{type}<br/>Volume: {volume}",
     "style": {
         "backgroundColor": "white",
         "color": "black"
@@ -433,6 +433,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
