@@ -281,10 +281,9 @@ with tab1:
     st.subheader("Volume Flow (From → Lead → Sub)")
 
 
-# -------------------- Animated Map with Markers + Arrows --------------------
-import pydeck as pdk
+# ... (all your previous code up to marker_layer and current_time definition) ...
 
-# -------------------- Animated Map with Markers + Arrows --------------------
+# -------------------- Animated Map with Markers + All-to-All Animated Arrows --------------------
 import pydeck as pdk
 
 # ---- Markers (pins with tooltips) ----
@@ -325,52 +324,36 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
-# ---- Trips builder ----
-def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template, color):
-    trips = []
-    for _, r in df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).iterrows():
-        path = [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]]
-        timestamps = [0, 100]  # must match path length
-        label = label_template(r)
-        trips.append({
-            "path": path,
-            "timestamps": timestamps,
-            "label": label,
-            "color": color
-        })
-    return pd.DataFrame(trips)
+# ---- All-to-All Animated Arrows ----
+# Gather all unique locations
+all_points = pd.concat([
+    filtered_df[["Lat_today", "Lon_today"]].rename(columns={"Lat_today": "lat", "Lon_today": "lon"}),
+    filtered_df[["Lat_lead", "Lon_lead"]].rename(columns={"Lat_lead": "lat", "Lon_lead": "lon"}),
+    filtered_df[["Lat_sub", "Lon_sub"]].rename(columns={"Lat_sub": "lat", "Lon_sub": "lon"})
+], ignore_index=True).dropna().drop_duplicates()
 
-# From → Lead (blue)
-from_to_lead = make_trips(
-    filtered_df,
-    "Lat_today","Lon_today","Lat_lead","Lon_lead",
-    lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}",
-    [0, 0, 255]
-)
+# All possible pairs (excluding self)
+pairs = all_points.merge(all_points, how="cross", suffixes=("_start", "_end"))
+pairs = pairs[(pairs["lat_start"] != pairs["lat_end"]) | (pairs["lon_start"] != pairs["lon_end"])]
 
-# Lead → Sub (red)
-lead_to_sub = make_trips(
-    filtered_df,
-    "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
-    lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}",
-    [255, 0, 0]
-)
-
-all_trips = pd.concat([from_to_lead, lead_to_sub], ignore_index=True)
-
-# Add timeline control
-current_time = st.slider("Animation time", 0, 100, 50)
+# Build trips data for animated arrows
+all_connections = pd.DataFrame({
+    "path": pairs.apply(lambda r: [[r["lon_start"], r["lat_start"]], [r["lon_end"], r["lat_end"]]], axis=1),
+    "timestamps": [[0, 100]] * len(pairs),
+    "label": pairs.apply(lambda r: f"{r['lat_start']},{r['lon_start']} → {r['lat_end']},{r['lon_end']}", axis=1),
+    "color": [[0, 255, 0]] * len(pairs)  # Green arrows
+})
 
 arrow_layer = pdk.Layer(
     "TripsLayer",
-    data=all_trips,
+    data=all_connections,
     get_path="path",
     get_timestamps="timestamps",
     get_color="color",
-    width_min_pixels=3,
+    width_min_pixels=2,
     trail_length=20,
     current_time=current_time,
-    opacity=0.9,
+    opacity=0.7,
     pickable=True
 )
 
@@ -384,11 +367,12 @@ view_state = pdk.ViewState(
 
 # ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],  # markers on top
+    layers=[arrow_layer, marker_layer],  # arrows below, markers on top
     initial_view_state=view_state,
     tooltip={"text": "{label}"}
 ))
 
+# ... (rest of your script, e.g. Detailed Flow Table, Edit Dataset tab, etc.) ...
 
     # ---- Detail table: per FM → Sub row with % ----
 st.subheader("Detailed Flow Table")
@@ -413,6 +397,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
