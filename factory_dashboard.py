@@ -308,7 +308,8 @@ def aggregate_lead_to_sub_markers(df):
     return markers
 
 def create_lead_to_sub_trips(df):
-    df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]).copy()
+    df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub_Pct"]).copy()
+    df = df[df["Sub_Pct"] > 0]  # Only include rows where Sub Volume > 0
     df["path"] = df.apply(lambda row: [
         [row["Lon_lead"], row["Lat_lead"]],
         [row["Lon_sub"], row["Lat_sub"]]
@@ -319,6 +320,7 @@ def create_lead_to_sub_trips(df):
     df["volume"] = df["Sub_Pct"]
     df["type"] = "Sub Volume Shifted"
     return df
+
 
 # ---- Render Map 1 ----
 st.subheader("Main Factory → Lead Factory")
@@ -398,6 +400,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
