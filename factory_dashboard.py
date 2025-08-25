@@ -326,7 +326,11 @@ sub_volumes["label"] = sub_volumes.apply(lambda r: f"{r['Plan Lead Factory']} â†
 sub_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_sub"}, inplace=True)
 
 
-markers["tooltip"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
+if "name" in markers.columns and "type" in markers.columns:
+    markers["tooltip"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
+else:
+    markers["tooltip"] = "Unknown"
+
 
 
 
@@ -367,6 +371,7 @@ marker_layer = pdk.Layer(
     pickable=True,
     get_tooltip="tooltip"
 )
+
 
 # ---- Connections ----
 lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
@@ -456,6 +461,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
