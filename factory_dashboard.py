@@ -131,47 +131,23 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
     return "n/a"
 
 # -------------------- File Upload --------------------
-# Debug marker to ensure syntax is valid up to here
-
-
 st.sidebar.subheader("Data")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
-# --- Keep uploaded file contents in session_state ---
 if uploaded_file is not None:
-    st.session_state["uploaded_file_name"] = uploaded_file.name
-    st.session_state["uploaded_file_bytes"] = uploaded_file.getvalue()
-
-# --- Allow clearing uploaded file ---
-if "uploaded_file_bytes" in st.session_state:
-    if st.sidebar.button("Clear uploaded file"):
-        del st.session_state["uploaded_file_bytes"]
-        del st.session_state["uploaded_file_name"]
-        st.rerun()
-
-# --- Load data (uploaded → fallback to GitHub) ---
-if "uploaded_file_bytes" in st.session_state:
     try:
-        import io
-        df = load_data(io.BytesIO(st.session_state["uploaded_file_bytes"]))
-        st.sidebar.success(f"Using uploaded file: {st.session_state['uploaded_file_name']}")
+        df = load_data(uploaded_file)
     except Exception as e:
-        st.error(f"Failed to load uploaded data: {e}")
+        st.error(f"Failed to load data: {e}")
         st.stop()
 else:
-    # Fallback: default dataset from GitHub
     default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
     try:
         df = load_data(default_url)
-        st.sidebar.info("Using default dataset from GitHub (upload Excel to override).")
+        st.sidebar.info("Using default dataset from GitHub (upload 'Footprint_SDR 4.xlsx' to override).")
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
-        
-        
-print("DEBUG: reached before uploaded_file_bytes check")
-
-
 
 # ---------------- Dashboard starts here (outside if/else) ----------------
 st.title("Factory Production Relocation Dashboard")
@@ -422,6 +398,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
