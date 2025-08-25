@@ -351,7 +351,7 @@ layer1_markers = pdk.Layer(
     "IconLayer",
     data=markers1,
     get_icon="icon_data",
-    get_size=4,
+    get_size=30,
     size_scale=15,
     get_position='[lon, lat]',
     pickable=True
@@ -384,7 +384,7 @@ markers2 = aggregate_lead_to_sub_markers(filtered_df)
 trips2 = create_lead_to_sub_trips(filtered_df)
 view_state2 = pdk.ViewState(latitude=markers2["lat"].mean(), longitude=markers2["lon"].mean(), zoom=3, pitch=35)
 
-layer2_markers = pdk.Layer("IconLayer", data=markers2, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
+layer2_markers = pdk.Layer("IconLayer", data=markers2, get_icon="icon_data", get_size=30, size_scale=15, get_position='[lon, lat]', pickable=True)
 layer2_trips = pdk.Layer(
     "TripsLayer",
     data=trips2,
@@ -429,6 +429,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
