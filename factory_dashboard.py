@@ -416,13 +416,9 @@ st.pydeck_chart(
         tooltip={"text": "{label}"},
         map_style="light"  # Enable light mode
     ),
-    width=1200,
-    height=600
+    width=2500,
+    height=400
 )
-
-
-placeholder.pydeck_chart(deck)
-time.sleep(0.1)
 
 
 # ... (rest of your script, e.g. Detailed Flow Table, Edit Dataset tab, etc.) ...
@@ -450,6 +446,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
