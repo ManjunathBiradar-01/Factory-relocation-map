@@ -314,6 +314,21 @@ tooltip = {
     }
 }
 
+
+def create_main_to_lead_trips(df):
+    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]).copy()
+    df["path"] = df.apply(lambda row: [
+        [row["Lon_today"], row["Lat_today"]],
+        [row["Lon_lead"], row["Lat_lead"]]
+    ], axis=1)
+    df["timestamps"] = [[0, 100]] * len(df)  # Simulated time steps
+    df["color"] = [[255, 140, 0]] * len(df)
+    df["name"] = df["Factory today"] + " → " + df["Plan Lead Factory"]
+    df["volume"] = df["Lead_Pct"]
+    df["type"] = "Lead Volume Shifted"
+    return df
+
+
 # ---- Render Map 1 ----
 st.subheader("Main Factory → Lead Factory")
 markers1 = aggregate_main_to_lead_markers(filtered_df)
@@ -321,13 +336,27 @@ arrows1 = create_main_to_lead_arrows(filtered_df)
 view_state1 = pdk.ViewState(latitude=markers1["lat"].mean(), longitude=markers1["lon"].mean(), zoom=3, pitch=35)
 
 layer1_markers = pdk.Layer("IconLayer", data=markers1, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
-layer1_arrows = pdk.Layer("ArcLayer", data=arrows1, get_source_position="start", get_target_position="end", get_source_color="color", get_target_color="color", get_width=5, pickable=True)
+layer1_arrows = 
+pdk.Layer(
+    "TripsLayer",
+    data=trips_df,
+    get_path="path",
+    get_timestamps="timestamps",
+    get_color="color",
+    opacity=0.8,
+    width_min_pixels=5,
+    rounded=True,
+    trail_length=180,
+    current_time=100,
+    pickable=True
+)
 
 st.pydeck_chart(pdk.Deck(
-    layers=[layer1_markers, layer1_arrows],
-    initial_view_state=view_state1,
+    layers=[marker_layer, trips_layer],
+    initial_view_state=view_state,
     tooltip=tooltip
 ))
+
 
 # ---- Render Map 2 ----
 st.subheader("Lead Factory → Sub Factory")
@@ -336,11 +365,24 @@ arrows2 = create_lead_to_sub_arrows(filtered_df)
 view_state2 = pdk.ViewState(latitude=markers2["lat"].mean(), longitude=markers2["lon"].mean(), zoom=3, pitch=35)
 
 layer2_markers = pdk.Layer("IconLayer", data=markers2, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
-layer2_arrows = pdk.Layer("ArcLayer", data=arrows2, get_source_position="start", get_target_position="end", get_source_color="color", get_target_color="color", get_width=5, pickable=True)
+layer2_arrows = 
+pdk.Layer(
+    "TripsLayer",
+    data=trips_df,
+    get_path="path",
+    get_timestamps="timestamps",
+    get_color="color",
+    opacity=0.8,
+    width_min_pixels=5,
+    rounded=True,
+    trail_length=180,
+    current_time=100,
+    pickable=True
+)
 
 st.pydeck_chart(pdk.Deck(
-    layers=[layer2_markers, layer2_arrows],
-    initial_view_state=view_state2,
+    layers=[marker_layer, trips_layer],
+    initial_view_state=view_state,
     tooltip=tooltip
 ))
 
@@ -368,6 +410,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
