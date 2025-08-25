@@ -261,7 +261,7 @@ def aggregate_marker_data(df):
 
     markers = pd.concat([from_vol, lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
-        "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Map_marker.svg",
         "width": 128,
         "height": 128,
         "anchorY": 128
@@ -368,6 +368,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
