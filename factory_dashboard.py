@@ -387,7 +387,7 @@ sub_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_sub"}, inplace=True)
 lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
 lead_connections["tooltip"] = lead_connections.apply(
     lambda r: f"{r['label']}"
-Volume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'], axis=1
+"Volume to Lead: {:.2f}".format(r['volume_to_lead']) if pd.notnull(r['volume_to_lead']) else r['label'], axis=1
 )
 
 sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
@@ -507,6 +507,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
