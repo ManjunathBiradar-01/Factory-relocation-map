@@ -345,6 +345,7 @@ all_points = pd.concat([
 
 # All possible pairs (excluding self)
 # Filter only rows with positive flow
+# Filter only rows with positive flow
 filtered_df = filtered_df[filtered_df["From_to_Sub_Pct"] > 0]
 
 # Create connections from Factory today to Plan Lead Factory (blue)
@@ -366,19 +367,20 @@ sub_connections = pd.DataFrame({
 # Combine both connections
 all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
 
-# Create the arrow layer
+# Create the arrow layer with increased size and continuous animation
 arrow_layer = pdk.Layer(
     "TripsLayer",
     data=all_connections,
     get_path="path",
     get_timestamps="timestamps",
     get_color="color",
-    width_min_pixels=2,
-    trail_length=20,
+    width_min_pixels=5,  # Increased arrow size
+    trail_length=100,    # Longer trail for continuous effect
     current_time=datetime.now().timestamp(),
-    opacity=0.7,
+    opacity=0.9,
     pickable=True
 )
+
 
 
 # ---- View ----
@@ -442,6 +444,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
