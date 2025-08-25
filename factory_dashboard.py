@@ -306,9 +306,9 @@ filtered_df = pd.DataFrame({
 })
 
 # ---- Markers ----
+# Create marker DataFrames
 from_markers = filtered_df.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"})[["lat", "lon", "name"]]
 from_markers["type"] = "From"
-from_markers["tooltip"] = from_markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
 lead_markers = filtered_df.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"})[["lat", "lon", "name"]]
 lead_markers["type"] = "Lead"
@@ -316,16 +316,10 @@ lead_markers["type"] = "Lead"
 sub_markers = filtered_df.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"})[["lat", "lon", "name"]]
 sub_markers["type"] = "Sub"
 
-# Volume summaries
-lead_volumes = filtered_df.groupby(["Factory today", "Plan Lead Factory"])["From_to_Sub_Pct"].sum().reset_index()
-lead_volumes["label"] = lead_volumes.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1)
-lead_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_lead"}, inplace=True)
+# Combine all markers
+markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
-sub_volumes = filtered_df.groupby(["Plan Lead Factory", "Plan Sub Factory"])["From_to_Sub_Pct"].sum().reset_index()
-sub_volumes["label"] = sub_volumes.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1)
-sub_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_sub"}, inplace=True)
-
-
+# Apply tooltip logic safely
 if "name" in markers.columns and "type" in markers.columns:
     markers["tooltip"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 else:
@@ -361,16 +355,7 @@ icon_data = {
 }
 markers["icon_data"] = [icon_data] * len(markers)
 
-marker_layer = pdk.Layer(
-    "IconLayer",
-    data=markers,
-    get_icon="icon_data",
-    get_size=4,
-    size_scale=10,
-    get_position="[lon, lat]",
-    pickable=True,
-    get_tooltip="tooltip"
-)
+
 
 
 # ---- Connections ----
@@ -461,6 +446,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
