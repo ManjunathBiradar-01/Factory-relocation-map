@@ -163,7 +163,6 @@ else:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
 
-
 # ---------------- Dashboard starts here (outside if/else) ----------------
 st.title("Factory Production Relocation Dashboard")
 
@@ -413,6 +412,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
