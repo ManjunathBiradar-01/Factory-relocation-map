@@ -131,13 +131,21 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
     return "n/a"
 
 # -------------------- File Upload --------------------
+# -------------------- Data Upload & Persistence --------------------
 st.sidebar.subheader("Data")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
-# --- Handle uploaded file with session_state ---
+# --- Keep uploaded file in session_state ---
 if uploaded_file is not None:
-    st.session_state["uploaded_file"] = uploaded_file
+    st.session_state["uploaded_file"] = uploaded_file   # Save file to session state
 
+# --- Allow clearing uploaded file ---
+if "uploaded_file" in st.session_state:
+    if st.sidebar.button("Clear uploaded file"):
+        del st.session_state["uploaded_file"]
+        st.rerun()
+
+# --- Load data (uploaded → fallback to GitHub) ---
 if "uploaded_file" in st.session_state:
     try:
         df = load_data(st.session_state["uploaded_file"])
@@ -145,6 +153,16 @@ if "uploaded_file" in st.session_state:
     except Exception as e:
         st.error(f"Failed to load uploaded data: {e}")
         st.stop()
+else:
+    # Fallback: default dataset from GitHub
+    default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
+    try:
+        df = load_data(default_url)
+        st.sidebar.info("Using default dataset from GitHub (upload Excel to override).")
+    except Exception as e:
+        st.error(f"Failed to load default file from GitHub: {e}")
+        st.stop()
+
 else:
     # Fallback: default dataset from GitHub
     default_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
@@ -404,6 +422,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
