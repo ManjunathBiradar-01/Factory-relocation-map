@@ -369,12 +369,33 @@ view_state = pdk.ViewState(
     pitch=45
 )
 
-# ---- Render ----
-st.pydeck_chart(pdk.Deck(
-    layers=[arrow_layer, marker_layer],  # arrows below, markers on top
-    initial_view_state=view_state,
-    tooltip={"text": "{label}"}
-))
+import time
+
+placeholder = st.empty()
+
+for t in range(0, 100):
+    animated_arrow_layer = pdk.Layer(
+        "TripsLayer",
+        data=all_connections,
+        get_path="path",
+        get_timestamps="timestamps",
+        get_color="color",
+        width_min_pixels=2,
+        trail_length=20,
+        current_time=float(t),
+        opacity=0.7,
+        pickable=True
+    )
+
+    deck = pdk.Deck(
+        layers=[animated_arrow_layer, marker_layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{label}"}
+    )
+
+    placeholder.pydeck_chart(deck)
+    time.sleep(0.1)
+
 
 # ... (rest of your script, e.g. Detailed Flow Table, Edit Dataset tab, etc.) ...
 
@@ -401,6 +422,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
