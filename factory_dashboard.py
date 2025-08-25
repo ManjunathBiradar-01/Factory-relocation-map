@@ -333,7 +333,13 @@ marker_layer = pdk.Layer(
 
 # Filter only rows with positive flow
 
-filtered_df = filtered_df[filtered_df["From_to_Sub_Pct"] > 0]
+
+filtered_df = filtered_df[
+    (filtered_df["From_to_Sub_Pct"] > 0) &
+    (filtered_df["Lat_sub"] > 0) &
+    (filtered_df["Lon_sub"] > 0)
+]
+
 
 
 # Gather all unique locations
@@ -452,6 +458,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
