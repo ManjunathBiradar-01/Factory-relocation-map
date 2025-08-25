@@ -136,7 +136,6 @@ uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
 # --- Handle uploaded file with session_state ---
 if uploaded_file is not None:
-    # Save file in session_state so it persists
     st.session_state["uploaded_file"] = uploaded_file
 
 if "uploaded_file" in st.session_state:
@@ -156,91 +155,65 @@ else:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
 
+# ---------------- Dashboard starts here (outside if/else) ----------------
+st.title("Factory Production Relocation Dashboard")
 
+sales_region_col = find_sales_region_col(df.columns)
 
+# Filters
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    machine_code_filter = st.multiselect("Machine Code (FM)", sorted(df["FM"].dropna().astype(str).unique()))
+with c2:
+    machine_name_filter = st.multiselect("Machine Name", sorted(df["Name"].dropna().astype(str).unique()))
+with c3:
+    engine_filter = st.multiselect("Select Engine Type", sorted(df["Engine"].dropna().astype(str).unique()))
+with c4:
+    emission_filter = st.multiselect("Select Emission Level", sorted(df["Emission"].dropna().astype(str).unique()))
 
-    st.title("Factory Production Relocation Dashboard")
+c5, c6 = st.columns(2)
+with c5:
+    lead_filter = st.multiselect("Lead Factory (To)", sorted(df["Plan Lead Factory"].dropna().astype(str).unique()))
+with c6:
+    sub_factory_filter = st.multiselect("Sub Factory", sorted(df["Plan Sub Factory"].dropna().astype(str).unique()))
 
-    sales_region_col = find_sales_region_col(df.columns)
+if sales_region_col:
+    sales_region_filter = st.multiselect("Sales Region", sorted(df[sales_region_col].dropna().astype(str).unique()))
+else:
+    sales_region_filter = []
+    st.info("Sales Region column not found (optional).")
 
-    # Filters
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        machine_code_filter = st.multiselect(
-            "Machine Code (FM)",
-            sorted(df["FM"].dropna().astype(str).unique())
-        )
-    with c2:
-        machine_name_filter = st.multiselect(
-            "Machine Name",
-            sorted(df["Name"].dropna().astype(str).unique())
-        )
-    with c3:
-        engine_filter = st.multiselect(
-            "Select Engine Type",
-            sorted(df["Engine"].dropna().astype(str).unique())
-        )
-    with c4:
-        emission_filter = st.multiselect(
-            "Select Emission Level",
-            sorted(df["Emission"].dropna().astype(str).unique())
-        )
+# Apply filters
+filtered_df = df.copy()
+if machine_code_filter:
+    filtered_df = filtered_df[filtered_df["FM"].astype(str).isin(machine_code_filter)]
+if machine_name_filter:
+    filtered_df = filtered_df[filtered_df["Name"].astype(str).isin(machine_name_filter)]
+if engine_filter:
+    filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
+if emission_filter:
+    filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
+if lead_filter:
+    filtered_df = filtered_df[filtered_df["Plan Lead Factory"].astype(str).isin(lead_filter)]
+if sub_factory_filter:
+    filtered_df = filtered_df[filtered_df["Plan Sub Factory"].astype(str).isin(sub_factory_filter)]
+if sales_region_col and sales_region_filter:
+    filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
-    c5, c6 = st.columns(2)
-    with c5:
-        lead_filter = st.multiselect(
-            "Lead Factory (To)",
-            sorted(df["Plan Lead Factory"].dropna().astype(str).unique())
-        )
-    with c6:
-        sub_factory_filter = st.multiselect(
-            "Sub Factory",
-            sorted(df["Plan Sub Factory"].dropna().astype(str).unique())
-        )
+# Friendly coordinate strings (optional for table)
+filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
+filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
+filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
 
-    if sales_region_col:
-        sales_region_filter = st.multiselect(
-            "Sales Region",
-            sorted(df[sales_region_col].dropna().astype(str).unique())
-        )
-    else:
-        sales_region_filter = []
-        st.info("Sales Region column not found (optional).")
+# KPIs
+kc1, kc2, kc3, kc4 = st.columns(4)
+with kc1: st.metric("Unique FMs", filtered_df["FM"].nunique())
+with kc2: st.metric("Main Factories", filtered_df["Factory today"].nunique())
+with kc3: st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
+with kc4: st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
 
-    # Apply filters
-    filtered_df = df.copy()
-    if machine_code_filter:
-        filtered_df = filtered_df[filtered_df["FM"].astype(str).isin(machine_code_filter)]
-    if machine_name_filter:
-        filtered_df = filtered_df[filtered_df["Name"].astype(str).isin(machine_name_filter)]
-    if engine_filter:
-        filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
-    if emission_filter:
-        filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
-    if lead_filter:
-        filtered_df = filtered_df[filtered_df["Plan Lead Factory"].astype(str).isin(lead_filter)]
-    if sub_factory_filter:
-        filtered_df = filtered_df[filtered_df["Plan Sub Factory"].astype(str).isin(sub_factory_filter)]
-    if sales_region_col and sales_region_filter:
-        filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
+st.subheader("Volume Flow (From → Lead → Sub)")
 
-    # Friendly coordinate strings (optional for table)
-    filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
-    filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
-    filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
-
-    # KPIs
-    kc1, kc2, kc3, kc4 = st.columns(4)
-    with kc1:
-        st.metric("Unique FMs", filtered_df["FM"].nunique())
-    with kc2:
-        st.metric("Main Factories", filtered_df["Factory today"].nunique())
-    with kc3:
-        st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
-    with kc4:
-        st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
-
-    st.subheader("Volume Flow (From → Lead → Sub)")
 
 import streamlit as st
 import pandas as pd
@@ -431,6 +404,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
