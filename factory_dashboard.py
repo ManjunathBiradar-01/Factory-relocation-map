@@ -310,13 +310,13 @@ def aggregate_lead_to_sub_markers(df):
 
 
     markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
-    markers["icon_data"] = [{
-        "url": "https://www.freeiconspng.com/uploads/map-location-icon-29.png",
-        "width": 128,
-        "height": 128,
-        "anchorY": 128
-    }] * len(markers)
-    return markers
+    icon_data = {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Map_pin_icon.svg",
+        "width": 256,
+        "height": 256,
+        "anchorY": 256
+        } 
+    markers["icon_data"] = [icon_data] * len(markers)
 
 def create_lead_to_sub_trips(df):
     df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub Volume"]).copy()
@@ -433,6 +433,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
