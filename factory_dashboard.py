@@ -329,18 +329,17 @@ else:
 
 
 # Merge volume info into markers
-lead_markers = lead_markers.merge(
-    lead_volumes.rename(columns={"Plan Lead Factory": "name", "volume_to_lead": "volume"}), on="name", how="left"
-)
-lead_markers["tooltip"] = lead_markers.apply(
-    lambda r: f"{r['name']} (Lead)\nVolume: {r['volume']:.2f}" if pd.notnull(r['volume']) else f"{r['name']} (Lead)", axis=1
+lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
+lead_connections["tooltip"] = lead_connections.apply(
+    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'],
+    axis=1
 )
 
-sub_markers = sub_markers.merge(
-    sub_volumes.rename(columns={"Plan Sub Factory": "name", "volume_to_sub": "volume"}), on="name", how="left"
-)
-sub_markers["tooltip"] = sub_markers.apply(
-    lambda r: f"{r['name']} (Sub)\nVolume: {r['volume']:.2f}" if pd.notnull(r['volume']) else f"{r['name']} (Sub)", axis=1
+
+sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
+sub_connections["tooltip"] = sub_connections.apply(
+    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'],
+    axis=1
 )
 
 # Combine all markers
@@ -446,6 +445,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
