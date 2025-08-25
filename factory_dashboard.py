@@ -245,7 +245,7 @@ st.title("Animated Arrows: Factory Relocation Maps")
 
 # ---- Tooltip ----
 tooltip = {
-    "html": "<b>{name}</b><br/>{type}<br/>Volume: {volume}",
+    "html": "&lt;b&gt;{name}&lt;/b&gt;&lt;br/&gt;{type}&lt;br/&gt;Volume: {volume}",
     "style": {
         "backgroundColor": "white",
         "color": "black"
@@ -256,11 +256,16 @@ tooltip = {
 def aggregate_main_to_lead_markers(df):
     from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Main Volume": "sum"}).reset_index()
     from_vol["type"] = "From"
-    from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"}, inplace=True)
+    from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"}, inplace=True)   
+    from_vol["volume"] = from_vol["Main Volume"]
+
+    
 
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
+    lead_vol["volume"] = lead_vol["Lead Volume"]
+
 
     markers = pd.concat([from_vol, lead_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -295,10 +300,14 @@ def aggregate_lead_to_sub_markers(df):
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
+    lead_vol["volume"] = lead_vol["Lead Volume"]
+
 
     sub_vol = df.groupby(["Lat_sub", "Lon_sub", "Plan Sub Factory"]).agg({"Sub Volume": "sum"}).reset_index()
     sub_vol["type"] = "Sub"
     sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"}, inplace=True)
+    sub_vol["volume"] = sub_vol["Sub Volume"]
+
 
     markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -325,12 +334,29 @@ def create_lead_to_sub_trips(df):
 
 
 # ---- Render Map 1 ----
-st.subheader("Main Factory → Lead Factory")
+# Example DataFrame (replace with your actual filtered_df)
+# filtered_df = load_data(...) or use your existing filtered_df
+
 markers1 = aggregate_main_to_lead_markers(filtered_df)
 trips1 = create_main_to_lead_trips(filtered_df)
-view_state1 = pdk.ViewState(latitude=markers1["lat"].mean(), longitude=markers1["lon"].mean(), zoom=3, pitch=35)
 
-layer1_markers = pdk.Layer("IconLayer", data=markers1, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
+view_state1 = pdk.ViewState(
+    latitude=markers1["lat"].mean(),
+    longitude=markers1["lon"].mean(),
+    zoom=4,
+    pitch=35
+)
+
+layer1_markers = pdk.Layer(
+    "IconLayer",
+    data=markers1,
+    get_icon="icon_data",
+    get_size=4,
+    size_scale=15,
+    get_position='[lon, lat]',
+    pickable=True
+)
+
 layer1_trips = pdk.Layer(
     "TripsLayer",
     data=trips1,
@@ -350,6 +376,7 @@ st.pydeck_chart(pdk.Deck(
     initial_view_state=view_state1,
     tooltip=tooltip
 ))
+
 
 # ---- Render Map 2 ----
 st.subheader("Lead Factory → Sub Factory")
@@ -402,6 +429,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
