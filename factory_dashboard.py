@@ -252,161 +252,117 @@ tooltip = {
     }
 }
 
-# ---- Map 1: Main Factory → Lead Factory ----
-def aggregate_main_to_lead_markers(df):
-    from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Main Volume": "sum"}).reset_index()
-    from_vol["type"] = "From"
-    from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"}, inplace=True)   
-    from_vol["volume"] = from_vol["Main Volume"]
+# -------------------- Animated Map with Markers + Arrows --------------------
+import pydeck as pdk
 
-    
+# ---- Build markers ----
+from_markers = filtered_df.rename(columns={
+    "Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"
+})[["lat","lon","name"]].dropna()
+from_markers["type"] = "From"
 
-    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
-    lead_vol["type"] = "Lead"
-    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
-    lead_vol["volume"] = lead_vol["Lead Volume"]
+lead_markers = filtered_df.rename(columns={
+    "Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"
+})[["lat","lon","name"]].dropna()
+lead_markers["type"] = "Lead"
 
+sub_markers = filtered_df.rename(columns={
+    "Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"
+})[["lat","lon","name"]].dropna()
+sub_markers["type"] = "Sub"
 
-    markers = pd.concat([from_vol, lead_vol], ignore_index=True)
-    markers["icon_data"] = [{
-        "url": "https://www.freeiconspng.com/uploads/map-location-icon-29.png",
-        "width": 128,
-        "height": 128,
-        "anchorY": 128
-    }] * len(markers)
-    return markers
+markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True)
 
+# ---- Map pin icons per type ----
+icon_urls = {
+    "From": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Map_pin_icon.svg",   # blue pin
+    "Lead": "https://upload.wikimedia.org/wikipedia/commons/8/88/Map_marker.svg",     # red pin
+    "Sub":  "https://upload.wikimedia.org/wikipedia/commons/1/12/Map_pin_green.svg"   # green pin
+}
 
-def create_main_to_lead_trips(df):
-    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead Volume"]).copy()
-    df = df[df["Lead Volume"] > 0]  # Only include rows with volume > 0
-
-    # Group by route to get total volume
-    grouped = df.groupby([
-        "Factory today", "Plan Lead Factory", "Lat_today", "Lon_today", "Lat_lead", "Lon_lead"
-    ], as_index=False).agg({"Lead Volume": "sum"})
-
-    grouped["path"] = grouped.apply(lambda row: [
-        [row["Lon_today"], row["Lat_today"]],
-        [row["Lon_lead"], row["Lat_lead"]]
-    ], axis=1)
-    grouped["timestamps"] = [[0, 100]] * len(grouped)
-    grouped["color"] = [[255, 140, 0]] * len(grouped)
-    grouped["name"] = grouped["Factory today"] + " → " + grouped["Plan Lead Factory"]
-    grouped["volume"] = grouped["Lead Volume"]
-    grouped["type"] = "Lead Volume Shifted"
-    return grouped
-def aggregate_lead_to_sub_markers(df):
-    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
-    lead_vol["type"] = "Lead"
-    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
-    lead_vol["volume"] = lead_vol["Lead Volume"]
-
-
-    sub_vol = df.groupby(["Lat_sub", "Lon_sub", "Plan Sub Factory"]).agg({"Sub Volume": "sum"}).reset_index()
-    sub_vol["type"] = "Sub"
-    sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"}, inplace=True)
-    sub_vol["volume"] = sub_vol["Sub Volume"]
-
-
-    markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
-    icon_data = {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Map_pin_icon.svg",
+def make_icon(type_):
+    return {
+        "url": icon_urls[type_],
         "width": 256,
         "height": 256,
         "anchorY": 256
-        } 
-    markers["icon_data"] = [icon_data] * len(markers)
+    }
 
-def create_lead_to_sub_trips(df):
-    df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub Volume"]).copy()
-    df = df[df["Sub Volume"] > 0]  # Only include rows where Sub Volume > 0
-    df["path"] = df.apply(lambda row: [
-        [row["Lon_lead"], row["Lat_lead"]],
-        [row["Lon_sub"], row["Lat_sub"]]
-    ], axis=1)
-    df["timestamps"] = [[0, 100]] * len(df)
-    df["color"] = [[0, 0, 255]] * len(df)
-    df["name"] = df["Plan Lead Factory"] + " → " + df["Plan Sub Factory"]
-    df["volume"] = df["Sub Volume"]
-    df["type"] = "Sub Volume Shifted"
-    return df
+markers["icon_data"] = markers["type"].apply(make_icon)
+markers["label"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
-
-
-filtered_df = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
-
-
-# ---- Render Map 1 ----
-# Example DataFrame (replace with your actual filtered_df)
-# filtered_df = load_data(...) or use your existing filtered_df
-
-markers1 = aggregate_main_to_lead_markers(filtered_df)
-trips1 = create_main_to_lead_trips(filtered_df)
-
-view_state1 = pdk.ViewState(
-    latitude=markers1["lat"].mean(),
-    longitude=markers1["lon"].mean(),
-    zoom=4,
-    pitch=35
-)
-
-layer1_markers = pdk.Layer(
+marker_layer = pdk.Layer(
     "IconLayer",
-    data=markers1,
+    data=markers,
     get_icon="icon_data",
-    get_size=30,
-    size_scale=30,
-    get_position='[lon, lat]',
+    get_size=6,
+    size_scale=30,       # increase this if markers look tiny
+    get_position="[lon, lat]",
     pickable=True
 )
 
-layer1_trips = pdk.Layer(
+# ---- Trips (animated arrows) ----
+def make_trips(df, start_lat, start_lon, end_lat, end_lon, label_template, color):
+    trips = []
+    for _, r in df.dropna(subset=[start_lat, start_lon, end_lat, end_lon]).iterrows():
+        path = [[r[start_lon], r[start_lat]], [r[end_lon], r[end_lat]]]
+        timestamps = [0, 100]  # must match path length
+        label = label_template(r)
+        trips.append({
+            "path": path,
+            "timestamps": timestamps,
+            "label": label,
+            "color": color
+        })
+    return pd.DataFrame(trips)
+
+# From → Lead (blue arrows)
+from_to_lead = make_trips(
+    filtered_df,
+    "Lat_today","Lon_today","Lat_lead","Lon_lead",
+    lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}",
+    [0, 0, 255]
+)
+
+# Lead → Sub (red arrows)
+lead_to_sub = make_trips(
+    filtered_df,
+    "Lat_lead","Lon_lead","Lat_sub","Lon_sub",
+    lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}",
+    [255, 0, 0]
+)
+
+all_trips = pd.concat([from_to_lead, lead_to_sub], ignore_index=True)
+
+# ---- Animation control ----
+current_time = st.slider("Animation time", 0, 100, 50)
+
+arrow_layer = pdk.Layer(
     "TripsLayer",
-    data=trips1,
+    data=all_trips,
     get_path="path",
     get_timestamps="timestamps",
     get_color="color",
-    opacity=0.8,
-    width_min_pixels=5,
-    rounded=True,
-    trail_length=180,
-    current_time=100,
+    width_min_pixels=3,
+    trail_length=20,
+    current_time=current_time,
+    opacity=0.9,
     pickable=True
 )
 
-st.pydeck_chart(pdk.Deck(
-    layers=[layer1_markers, layer1_trips],
-    initial_view_state=view_state1,
-    tooltip=tooltip
-))
-
-
-# ---- Render Map 2 ----
-st.subheader("Lead Factory → Sub Factory")
-markers2 = aggregate_lead_to_sub_markers(filtered_df)
-trips2 = create_lead_to_sub_trips(filtered_df)
-view_state2 = pdk.ViewState(latitude=markers2["lat"].mean(), longitude=markers2["lon"].mean(), zoom=3, pitch=35)
-
-layer2_markers = pdk.Layer("IconLayer", data=markers2, get_icon="icon_data", get_size=30, size_scale=30, get_position='[lon, lat]', pickable=True)
-layer2_trips = pdk.Layer(
-    "TripsLayer",
-    data=trips2,
-    get_path="path",
-    get_timestamps="timestamps",
-    get_color="color",
-    opacity=0.8,
-    width_min_pixels=5,
-    rounded=True,
-    trail_length=180,
-    current_time=100,
-    pickable=True
+# ---- View ----
+view_state = pdk.ViewState(
+    latitude=markers["lat"].mean() if not markers.empty else 20,
+    longitude=markers["lon"].mean() if not markers.empty else 80,
+    zoom=3,
+    pitch=45
 )
 
+# ---- Render ----
 st.pydeck_chart(pdk.Deck(
-    layers=[layer2_markers, layer2_trips],
-    initial_view_state=view_state2,
-    tooltip=tooltip
+    layers=[arrow_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{label}"}
 ))
 
 
@@ -433,6 +389,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
