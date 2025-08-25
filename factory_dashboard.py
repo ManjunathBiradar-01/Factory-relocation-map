@@ -149,8 +149,6 @@ else:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
 
-# -------------------- Tabs --------------------
-tab1, tab2 = st.tabs(["Dashboard", "Edit Dataset"])
 
 with tab1:
     st.title("Factory Production Relocation Dashboard")
@@ -426,14 +424,6 @@ st.dataframe(
     use_container_width=True
 )
 
-with tab2:
-    st.subheader("Edit Dataset")
-    st.write("Use the sidebar to upload a new Excel. Ensure the file contains:")
-    st.markdown("""
-    - **From** sheet with: `FM`, `Name`, `Emission`, `Engine`, `Factory today`, `Latitude`, `Longitude`
-    - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
-    - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
-    """)
 
 
 
