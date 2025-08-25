@@ -310,11 +310,12 @@ markers = pd.concat([from_markers, lead_markers, sub_markers], ignore_index=True
 
 # Icon data
 icon_data = {
-    "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg",
+    "url": "https://cdn-icons-png.flaticon.com/512/684/684908.png",  # Location pin icon
     "width": 128,
     "height": 128,
     "anchorY": 128
 }
+
 markers["icon_data"] = [icon_data] * len(markers)
 markers["label"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
 
@@ -422,6 +423,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
