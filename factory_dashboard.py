@@ -5,6 +5,11 @@ import streamlit as st
 import io
 from datetime import datetime
 import plotly.graph_objects as go
+import time
+
+import streamlit as st
+import pydeck as pdk
+import time
 
 
 from datetime import datetime
@@ -375,20 +380,36 @@ all_connections = pd.concat([lead_connections, sub_connections], ignore_index=Tr
 
 # Create the arrow layer with increased size and continuous animation
 
+placeholder = st.empty()
 
 
-animated_arrow_layer = pdk.Layer(
-    "TripsLayer",
-    data=all_connections,
-    get_path="path",
-    get_timestamps="timestamps",
-    get_color="color",
-    width_min_pixels=6,
-    trail_length=150,
-    current_time=float(t),  # Animate over time
-    opacity=0.95,
-    pickable=True
-)
+for t in range(0, 100):
+
+    animated_arrow_layer = pdk.Layer(
+        "TripsLayer",
+        data=all_connections,
+        get_path="path",
+        get_timestamps="timestamps",
+        get_color="color",
+        width_min_pixels=6,
+        trail_length=150,
+        current_time=float(t),  # Animate over time
+        opacity=0.95,
+        pickable=True
+    )
+
+
+
+    deck = pdk.Deck(
+        layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{label}"},
+        map_style="light"
+    )
+
+    placeholder.pydeck_chart(deck)
+    time.sleep(0.1)
+
 
 
 all_connections["icon_data"] = {
@@ -422,11 +443,6 @@ view_state = pdk.ViewState(
 
 
 
-import time
-
-import streamlit as st
-import pydeck as pdk
-import time
 
 placeholder = st.empty()
 
@@ -482,6 +498,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
