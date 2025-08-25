@@ -245,7 +245,7 @@ st.title("Animated Arrows: Factory Relocation Maps")
 
 # ---- Tooltip ----
 tooltip = {
-    "html": "<b>{name}</b><br/>{type}<br/>Volume: {volume}",
+    "html": "<b>{name}</b><br/>{type}<br/>Volume: {Volume}",
     "style": {
         "backgroundColor": "white",
         "color": "black"
@@ -331,6 +331,10 @@ def create_lead_to_sub_trips(df):
     df["volume"] = df["Sub Volume"]
     df["type"] = "Sub Volume Shifted"
     return df
+
+
+
+filtered_df = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"])
 
 
 # ---- Render Map 1 ----
@@ -429,6 +433,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
