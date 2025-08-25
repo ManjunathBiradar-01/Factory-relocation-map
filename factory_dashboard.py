@@ -34,17 +34,17 @@ def load_data(xlsx_file) -> pd.DataFrame:
         d.columns = d.columns.str.strip()
 
     # ---- Required columns validation ----
-    required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
+    required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude", "Volume", "Main sales region"}
     missing_from = required_from - set(df_from.columns)
     if missing_from:
         raise ValueError(f"'From' missing columns: {sorted(missing_from)}")
 
-    required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude", "SFC RTM", "Main sales region"}
+    required_to = {"FM", "Plan Lead Factory", "Latitude", "Longitude", "Volume", "Main sales region"}
     missing_to = required_to - set(df_to.columns)
     if missing_to:
         raise ValueError(f"'To' missing columns: {sorted(missing_to)}")
 
-    required_sub = {"FM", "Latitude", "Longitude", "SFC RTM", "Plan Sub Factory", "Volume", "Main sales region"}
+    required_sub = {"FM", "Latitude", "Longitude", "Volume", "Plan Sub Factory", "Volume", "Main sales region"}
     missing_sub = required_sub - set(df_sub.columns)
     if missing_sub:
         raise ValueError(f"'Sub' missing columns: {sorted(missing_sub)}")
@@ -337,3 +337,4 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
