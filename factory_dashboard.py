@@ -253,14 +253,17 @@ tooltip = {
 }
 
 # ---- Map 1: Main Factory → Lead Factory ----
+
 def aggregate_main_to_lead_markers(df):
     from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Main Volume": "sum"}).reset_index()
     from_vol["type"] = "From"
     from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"}, inplace=True)
+    from_vol["volume"] = from_vol["Main Volume"]
 
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
+    lead_vol["volume"] = lead_vol["Lead Volume"]
 
     markers = pd.concat([from_vol, lead_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -270,7 +273,6 @@ def aggregate_main_to_lead_markers(df):
         "anchorY": 128
     }] * len(markers)
     return markers
-
 def create_main_to_lead_trips(df):
     df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead Volume"]).copy()
     df = df[df["Lead Volume"] > 0]  # Only include rows with volume > 0
@@ -293,14 +295,17 @@ def create_main_to_lead_trips(df):
 
 
 # ---- Map 2: Lead Factory → Sub Factory ----
+
 def aggregate_lead_to_sub_markers(df):
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
+    lead_vol["volume"] = lead_vol["Lead Volume"]
 
     sub_vol = df.groupby(["Lat_sub", "Lon_sub", "Plan Sub Factory"]).agg({"Sub Volume": "sum"}).reset_index()
     sub_vol["type"] = "Sub"
     sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"}, inplace=True)
+    sub_vol["volume"] = sub_vol["Sub Volume"]
 
     markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -310,7 +315,6 @@ def aggregate_lead_to_sub_markers(df):
         "anchorY": 128
     }] * len(markers)
     return markers
-
 def create_lead_to_sub_trips(df):
     df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub Volume"]).copy()
     df = df[df["Sub Volume"] > 0]  # Only include rows where Sub Volume > 0
@@ -404,6 +408,8 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
+
 
 
 
