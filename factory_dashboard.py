@@ -344,17 +344,29 @@ all_points = pd.concat([
 ], ignore_index=True).dropna().drop_duplicates()
 
 # All possible pairs (excluding self)
-pairs = all_points.merge(all_points, how="cross", suffixes=("_start", "_end"))
-pairs = pairs[(pairs["lat_start"] != pairs["lat_end"]) | (pairs["lon_start"] != pairs["lon_end"])]
+# Filter only rows with positive flow
+filtered_df = filtered_df[filtered_df["From_to_Sub_Pct"] > 0]
 
-# Build trips data for animated arrows
-all_connections = pd.DataFrame({
-    "path": pairs.apply(lambda r: [[r["lon_start"], r["lat_start"]], [r["lon_end"], r["lat_end"]]], axis=1),
-    "timestamps": [[0, 100]] * len(pairs),
-    "label": pairs.apply(lambda r: f"{r['lat_start']},{r['lon_start']} → {r['lat_end']},{r['lon_end']}", axis=1),
-    "color": [[0, 255, 0]] * len(pairs)  # Green arrows
+# Create connections from Factory today to Plan Lead Factory (blue)
+lead_connections = pd.DataFrame({
+    "path": filtered_df.apply(lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1),
+    "timestamps": [[0, 100]] * len(filtered_df),
+    "label": filtered_df.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1),
+    "color": [[0, 0, 255]] * len(filtered_df)  # Blue
 })
 
+# Create connections from Plan Lead Factory to Plan Sub Factory (green)
+sub_connections = pd.DataFrame({
+    "path": filtered_df.apply(lambda r: [[r["Lon_lead"], r["Lat_lead"]], [r["Lon_sub"], r["Lat_sub"]]], axis=1),
+    "timestamps": [[0, 100]] * len(filtered_df),
+    "label": filtered_df.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1),
+    "color": [[0, 255, 0]] * len(filtered_df)  # Green
+})
+
+# Combine both connections
+all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
+
+# Create the arrow layer
 arrow_layer = pdk.Layer(
     "TripsLayer",
     data=all_connections,
@@ -363,10 +375,11 @@ arrow_layer = pdk.Layer(
     get_color="color",
     width_min_pixels=2,
     trail_length=20,
-    current_time=current_time,
+    current_time=datetime.now().timestamp(),
     opacity=0.7,
     pickable=True
 )
+
 
 # ---- View ----
 view_state = pdk.ViewState(
@@ -429,6 +442,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
