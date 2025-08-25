@@ -392,10 +392,9 @@ lead_connections["tooltip"] = lead_connections.apply(
 
 sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
 sub_connections["tooltip"] = sub_connections.apply(
-    lambda r: f"{r['label']}
-Volume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'], axis=1
+    lambda r: f"{r['label']}"
+Volume to Sub: {:.2f}".format(r['volume_to_sub']) if pd.notnull(r['volume_to_sub']) else r['label'], axis=1
 )
-
 all_connections = pd.concat([lead_connections, sub_connections], ignore_index=True)
 
 # Combine both connections
@@ -507,6 +506,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
