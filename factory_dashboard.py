@@ -329,7 +329,7 @@ marker_layer = pdk.Layer(
     pickable=True
 )
 
-# ---- All-to-All Animated Arrows ----
+
 
 # Filter only rows with positive flow
 
@@ -391,37 +391,44 @@ view_state = pdk.ViewState(
     pitch=45
 )
 
+
+
+import time
+
+import streamlit as st
+import pydeck as pdk
 import time
 
 placeholder = st.empty()
 
-for t in range(0, 100):
-    animated_arrow_layer = pdk.Layer(
-        "TripsLayer",
-        data=all_connections,
-        get_path="path",
-        get_timestamps="timestamps",
-        get_color="color",
-        width_min_pixels=2,
-        trail_length=20,
-        current_time=float(t),
-        opacity=0.7,
-        pickable=True
-    )
+while True:
+    for t in range(0, 100):
+        animated_arrow_layer = pdk.Layer(
+            "TripsLayer",
+            data=all_connections,
+            get_path="path",
+            get_timestamps="timestamps",
+            get_color="color",
+            width_min_pixels=2,
+            trail_length=20,
+            current_time=float(t),
+            opacity=0.7,
+            pickable=True
+        )
 
-st.pydeck_chart(
-    pdk.Deck(
-        layers=[arrow_layer, marker_layer],
-        initial_view_state=view_state,
-        tooltip={"text": "{label}"},
-        map_style="light"  # Enable light mode
-    ),
-    width=2500,
-    height=400
-)
+        deck = pdk.Deck(
+            layers=[animated_arrow_layer, marker_layer],
+            initial_view_state=view_state,
+            tooltip={"text": "{label}"},
+            map_style="light"
+        )
+
+    placeholder.pydeck_chart(deck)
+    time.sleep(0.1)
 
 
-# ... (rest of your script, e.g. Detailed Flow Table, Edit Dataset tab, etc.) ...
+
+
 
     # ---- Detail table: per FM → Sub row with % ----
 st.subheader("Detailed Flow Table")
@@ -446,6 +453,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
