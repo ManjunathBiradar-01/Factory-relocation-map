@@ -272,7 +272,7 @@ def aggregate_main_to_lead_markers(df):
     return markers
 
 def create_main_to_lead_trips(df):
-    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead Voume"]).copy()
+    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead Volume"]).copy()
     df = df[df["Lead Volume"] > 0]  # Only include rows with volume > 0
 
     # Group by route to get total volume
@@ -404,6 +404,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
