@@ -132,7 +132,7 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
 
 # -------------------- File Upload --------------------
 # Debug marker to ensure syntax is valid up to here
-print("DEBUG: reached before uploaded_file_bytes check")
+
 
 st.sidebar.subheader("Data")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
@@ -167,6 +167,8 @@ else:
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
+
+print("DEBUG: reached before uploaded_file_bytes check")
 
 
 
@@ -419,6 +421,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
