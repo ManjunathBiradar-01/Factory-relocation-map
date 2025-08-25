@@ -131,25 +131,27 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
     return "n/a"
 
 # -------------------- File Upload --------------------
-# -------------------- Data Upload & Persistence --------------------
 st.sidebar.subheader("Data")
 uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx"])
 
-# --- Keep uploaded file in session_state ---
+# --- Keep uploaded file contents in session_state ---
 if uploaded_file is not None:
-    st.session_state["uploaded_file"] = uploaded_file   # Save file to session state
+    st.session_state["uploaded_file_name"] = uploaded_file.name
+    st.session_state["uploaded_file_bytes"] = uploaded_file.getvalue()
 
 # --- Allow clearing uploaded file ---
-if "uploaded_file" in st.session_state:
+if "uploaded_file_bytes" in st.session_state:
     if st.sidebar.button("Clear uploaded file"):
-        del st.session_state["uploaded_file"]
+        del st.session_state["uploaded_file_bytes"]
+        del st.session_state["uploaded_file_name"]
         st.rerun()
 
 # --- Load data (uploaded → fallback to GitHub) ---
-if "uploaded_file" in st.session_state:
+if "uploaded_file_bytes" in st.session_state:
     try:
-        df = load_data(st.session_state["uploaded_file"])
-        st.sidebar.success(f"Using uploaded file: {st.session_state['uploaded_file'].name}")
+        import io
+        df = load_data(io.BytesIO(st.session_state["uploaded_file_bytes"]))
+        st.sidebar.success(f"Using uploaded file: {st.session_state['uploaded_file_name']}")
     except Exception as e:
         st.error(f"Failed to load uploaded data: {e}")
         st.stop()
@@ -162,6 +164,7 @@ else:
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
         st.stop()
+
 
 
 # ---------------- Dashboard starts here (outside if/else) ----------------
@@ -413,6 +416,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
