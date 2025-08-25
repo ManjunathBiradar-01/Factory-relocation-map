@@ -292,7 +292,6 @@ with tab1:
 
 
 
-# -------------------- Animated Map with Markers + All-to-All Animated Arrows --------------------
 import pydeck as pdk
 
 # ---- Markers (pins with tooltips) ----
@@ -484,6 +483,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
