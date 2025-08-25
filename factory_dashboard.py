@@ -316,7 +316,7 @@ lead_markers["type"] = "Lead"
 sub_markers = filtered_df.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"})[["lat", "lon", "name"]]
 sub_markers["type"] = "Sub"
 
-# Volume info
+# Volume summaries
 lead_volumes = filtered_df.groupby(["Factory today", "Plan Lead Factory"])["From_to_Sub_Pct"].sum().reset_index()
 lead_volumes["label"] = lead_volumes.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1)
 lead_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_lead"}, inplace=True)
@@ -324,6 +324,11 @@ lead_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_lead"}, inplace=True)
 sub_volumes = filtered_df.groupby(["Plan Lead Factory", "Plan Sub Factory"])["From_to_Sub_Pct"].sum().reset_index()
 sub_volumes["label"] = sub_volumes.apply(lambda r: f"{r['Plan Lead Factory']} → {r['Plan Sub Factory']}", axis=1)
 sub_volumes.rename(columns={"From_to_Sub_Pct": "volume_to_sub"}, inplace=True)
+
+
+markers["tooltip"] = markers.apply(lambda r: f"{r['name']} ({r['type']})", axis=1)
+
+
 
 # Merge volume info into markers
 lead_markers = lead_markers.merge(
@@ -364,15 +369,16 @@ marker_layer = pdk.Layer(
 )
 
 # ---- Connections ----
-lead_connections = pd.DataFrame({
-    "path": filtered_df.apply(lambda r: [[r["Lon_today"], r["Lat_today"]], [r["Lon_lead"], r["Lat_lead"]]], axis=1),
-    "timestamps": [[0, 100]] * len(filtered_df),
-    "label": filtered_df.apply(lambda r: f"{r['Factory today']} → {r['Plan Lead Factory']}", axis=1),
-    "color": [[0, 0, 255]] * len(filtered_df)
-})
 lead_connections = lead_connections.merge(lead_volumes, on="label", how="left")
 lead_connections["tooltip"] = lead_connections.apply(
-    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'], axis=1
+    lambda r: f"{r['label']}\nVolume to Lead: {r['volume_to_lead']:.2f}" if pd.notnull(r['volume_to_lead']) else r['label'],
+    axis=1
+)
+
+sub_connections = sub_connections.merge(sub_volumes, on="label", how="left")
+sub_connections["tooltip"] = sub_connections.apply(
+    lambda r: f"{r['label']}\nVolume to Sub: {r['volume_to_sub']:.2f}" if pd.notnull(r['volume_to_sub']) else r['label'],
+    axis=1
 )
 
 sub_connections = pd.DataFrame({
@@ -402,28 +408,28 @@ placeholder = st.empty()
 
 for t in range(0, 100):
     animated_arrow_layer = pdk.Layer(
-        "TripsLayer",
-        data=all_connections,
-        get_path="path",
-        get_timestamps="timestamps",
-        get_color="color",
-        width_min_pixels=2,
-        trail_length=20,
-        current_time=float(t),
-        opacity=0.7,
-        pickable=True,
-        get_tooltip="tooltip"
-    )
+    "TripsLayer",
+    data=all_connections,
+    get_path="path",
+    get_timestamps="timestamps",
+    get_color="color",
+    width_min_pixels=2,
+    trail_length=20,
+    current_time=float(t),
+    opacity=0.7,
+    pickable=True,
+    get_tooltip="tooltip"
+)
 
     deck = pdk.Deck(
-        layers=[animated_arrow_layer, marker_layer],
-        initial_view_state=view_state,
-        tooltip={"text": "{tooltip}"},
-        map_style="light"
-    )
+    layers=[animated_arrow_layer, arrow_icon_layer, marker_layer],
+    initial_view_state=view_state,
+    tooltip={"text": "{tooltip}"},
+    map_style="light"
+)
 
-    placeholder.pydeck_chart(deck)
-    time.sleep(0.1)
+placeholder.pydeck_chart(deck)
+time.sleep(0.1)
 
 
 
@@ -450,6 +456,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
