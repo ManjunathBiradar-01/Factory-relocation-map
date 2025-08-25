@@ -287,7 +287,7 @@ def create_main_to_lead_trips(df):
     grouped["timestamps"] = [[0, 100]] * len(grouped)
     grouped["color"] = [[255, 140, 0]] * len(grouped)
     grouped["name"] = grouped["Factory today"] + " → " + grouped["Plan Lead Factory"]
-    grouped["volume"] = grouped["Lead_Pct"]
+    grouped["volume"] = grouped["Lead Volume"]
     grouped["type"] = "Lead Volume Shifted"
     return grouped
 
@@ -404,6 +404,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
