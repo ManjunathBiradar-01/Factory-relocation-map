@@ -50,27 +50,23 @@ def load_data(xlsx_file) -> pd.DataFrame:
         raise ValueError(f"'Sub' missing columns: {sorted(missing_sub)}")
 
     # ---- Rename coordinates to avoid collisions ----
-    df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
-    df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead"})
-    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",   "Longitude": "Lon_sub"})
+    df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today", "Volume" : "Main Volume"})
+    df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead",  "Volume" : "Lead Volume"})
+    df_sub  = df_sub.rename(columns={"Latitude": "Lat_sub",   "Longitude": "Lon_sub",  "Volume" : "Sub Volume"})
 
     # ---- Detect optional volume columns ----
     lead_pct_col = find_col(df_to, [
-        "Volume Lead Plant (%)", "Lead Volume (%)", "Lead Allocation (%)",
-        "Lead %", "Lead Percent", "Volume (%)", "Volume"
-    ])
+        "Volume"])
     sub_pct_col = find_col(df_sub, [
-        "Volume Sub (%)", "Sub Volume (%)", "Sub Allocation (%)", "Sub %",
-        "Volume (%)", "Volume"
-    ])
+       "Volume"])
 
     # ---- Keep only necessary columns prior to merge ----
-    df_to_keep  = ["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]
+    df_to_keep  = ["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead", "Lead Volume"]
     if lead_pct_col:
         df_to_keep.append(lead_pct_col)
     df_to_keep = df_to[df_to_keep].copy()
 
-    df_sub_keep = ["FM", "Plan Sub Factory", "Lat_sub", "Lon_sub"]
+    df_sub_keep = ["FM", "Plan Sub Factory", "Lat_sub", "Lon_sub",  "Sub Volume"]
     if sub_pct_col:
         df_sub_keep.append(sub_pct_col)
     df_sub_keep = df_sub[df_sub_keep].copy()
@@ -282,7 +278,7 @@ def create_main_to_lead_trips(df):
     # Group by route to get total volume
     grouped = df.groupby([
         "Factory today", "Plan Lead Factory", "Lat_today", "Lon_today", "Lat_lead", "Lon_lead"
-    ], as_index=False).agg({"Lead_Pct": "sum"})
+    ], as_index=False).agg({"Volume": "sum"})
 
     grouped["path"] = grouped.apply(lambda row: [
         [row["Lon_today"], row["Lat_today"]],
@@ -408,6 +404,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
