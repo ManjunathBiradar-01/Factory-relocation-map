@@ -324,7 +324,7 @@ marker_layer = pdk.Layer(
     data=markers,
     get_icon="icon_data",
     get_size=4,
-    size_scale=15,
+    size_scale=10,
     get_position="[lon, lat]",
     pickable=True
 )
@@ -446,6 +446,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
