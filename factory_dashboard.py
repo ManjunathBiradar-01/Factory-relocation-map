@@ -409,11 +409,17 @@ for t in range(0, 100):
         pickable=True
     )
 
-    deck = pdk.Deck(
-        layers=[animated_arrow_layer, marker_layer],
+st.pydeck_chart(
+    pdk.Deck(
+        layers=[arrow_layer, marker_layer],
         initial_view_state=view_state,
-        tooltip={"text": "{label}"}
-    )
+        tooltip={"text": "{label}"},
+        map_style="light"  # Enable light mode
+    ),
+    width=1200,
+    height=600
+)
+
 
     placeholder.pydeck_chart(deck)
     time.sleep(0.1)
@@ -444,6 +450,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
