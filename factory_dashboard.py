@@ -240,13 +240,15 @@ with tab1:
 
     st.subheader("Volume Flow (From → Lead → Sub)")
 
-    # ---- Map Visualization (Static) ----
-    # Markers for each location
-import pydeck as pdk
+import streamlit as st
 import pandas as pd
+import pydeck as pdk
 
-# Aggregate volumes for markers
-def aggregate_marker_data(df):
+st.set_page_config(layout="wide")
+st.title("Factory Relocation Maps")
+
+# ---- Map 1: Main Factory → Lead Factory ----
+def aggregate_main_to_lead_markers(df):
     from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Volume": "sum"}).reset_index()
     from_vol["type"] = "From"
     from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name", "Volume": "from_volume"}, inplace=True)
@@ -254,8 +256,6 @@ def aggregate_marker_data(df):
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead_Pct": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name", "Lead_Pct": "lead_volume"}, inplace=True)
-
-    
 
     markers = pd.concat([from_vol, lead_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -266,74 +266,18 @@ def aggregate_marker_data(df):
     }] * len(markers)
     return markers
 
-# Arrows for connections
-def create_arrow_data(df):
-    arrows_main_to_lead = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]).copy()
-    arrows_main_to_lead["start"] = arrows_main_to_lead[["Lon_today", "Lat_today"]].values.tolist()
-    arrows_main_to_lead["end"] = arrows_main_to_lead[["Lon_lead", "Lat_lead"]].values.tolist()
-    arrows_main_to_lead["color"] = [[255, 140, 0]] * len(arrows_main_to_lead)
-    arrows_main_to_lead["name"] = arrows_main_to_lead["Factory today"] + " → " + arrows_main_to_lead["Plan Lead Factory"]
-    arrows_main_to_lead["volume"] = arrows_main_to_lead["Lead_Pct"]
-    arrows_main_to_lead["type"] = "Lead Volume Shifted"
+def create_main_to_lead_arrows(df):
+    arrows = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]).copy()
+    arrows["start"] = arrows[["Lon_today", "Lat_today"]].values.tolist()
+    arrows["end"] = arrows[["Lon_lead", "Lat_lead"]].values.tolist()
+    arrows["color"] = [[255, 140, 0]] * len(arrows)
+    arrows["name"] = arrows["Factory today"] + " → " + arrows["Plan Lead Factory"]
+    arrows["volume"] = arrows["Lead_Pct"]
+    arrows["type"] = "Lead Volume Shifted"
+    return arrows
 
-    
-    return arrows_main_to_lead
-
-# Generate layers
-def generate_layers(markers, arrows_main_to_lead):
-    marker_layer = pdk.Layer(
-        "IconLayer",
-        data=markers,
-        get_icon="icon_data",
-        get_size=4,
-        size_scale=15,
-        get_position='[lon, lat]',
-        pickable=True
-    )
-
-    arrow_layer_main_to_lead = pdk.Layer(
-        "ArcLayer",
-        data=arrows_main_to_lead,
-        get_source_position="start",
-        get_target_position="end",
-        get_source_color="color",
-        get_target_color="color",
-        get_width=5,
-        pickable=True
-    )
-
-  
-    return [marker_layer, arrow_layer_main_to_lead]
-
-# Tooltip
-tooltip = {
-    "html": "<b>{name}</b><br/>{type}<br/>Volume: {volume}",
-    "style": {
-        "backgroundColor": "white",
-        "color": "black"
-    }
-}
-
-# Final rendering
-markers = aggregate_marker_data(filtered_df)
-arrows_main_to_lead = create_arrow_data(filtered_df)
-view_state = pdk.ViewState(latitude=markers["lat"].mean(), longitude=markers["lon"].mean(), zoom=3, pitch=35)
-
-st.pydeck_chart(pdk.Deck(
-    layers=generate_layers(markers, arrows_main_to_lead),
-    initial_view_state=view_state,
-    tooltip=tooltip
-))
-
-
-   # ---- Map Visualization (Static) ----
-    # Markers for each location
-import pydeck as pdk
-import pandas as pd
-
-# Aggregate volumes for markers
-def aggregate_marker_data(df):
-
+# ---- Map 2: Lead Factory → Sub Factory ----
+def aggregate_lead_to_sub_markers(df):
     lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead_Pct": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
     lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name", "Lead_Pct": "lead_volume"}, inplace=True)
@@ -342,7 +286,7 @@ def aggregate_marker_data(df):
     sub_vol["type"] = "Sub"
     sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name", "Sub_Pct": "sub_volume"}, inplace=True)
 
-    markers = pd.concat([from_vol, lead_vol, sub_vol], ignore_index=True)
+    markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
         "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Map_pin_icon.svg",
         "width": 128,
@@ -351,45 +295,17 @@ def aggregate_marker_data(df):
     }] * len(markers)
     return markers
 
-# Arrows for connections
-def create_arrow_data(df):
-    arrows_lead_to_sub = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]).copy()
-    arrows_lead_to_sub["start"] = arrows_lead_to_sub[["Lon_lead", "Lat_lead"]].values.tolist()
-    arrows_lead_to_sub["end"] = arrows_lead_to_sub[["Lon_sub", "Lat_sub"]].values.tolist()
-    arrows_lead_to_sub["color"] = [[0, 0, 255]] * len(arrows_lead_to_sub)
-    arrows_lead_to_sub["name"] = arrows_lead_to_sub["Plan Lead Factory"] + " → " + arrows_lead_to_sub["Plan Sub Factory"]
-    arrows_lead_to_sub["volume"] = arrows_lead_to_sub["Sub_Pct"]
-    arrows_lead_to_sub["type"] = "Sub Volume Shifted"
+def create_lead_to_sub_arrows(df):
+    arrows = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]).copy()
+    arrows["start"] = arrows[["Lon_lead", "Lat_lead"]].values.tolist()
+    arrows["end"] = arrows[["Lon_sub", "Lat_sub"]].values.tolist()
+    arrows["color"] = [[0, 0, 255]] * len(arrows)
+    arrows["name"] = arrows["Plan Lead Factory"] + " → " + arrows["Plan Sub Factory"]
+    arrows["volume"] = arrows["Sub_Pct"]
+    arrows["type"] = "Sub Volume Shifted"
+    return arrows
 
-    return arrows_lead_to_sub
-
-# Generate layers
-def generate_layers(markers, arrows_lead_to_sub):
-    marker_layer = pdk.Layer(
-        "IconLayer",
-        data=markers,
-        get_icon="icon_data",
-        get_size=4,
-        size_scale=15,
-        get_position='[lon, lat]',
-        pickable=True
-    )
-
-
-    arrow_layer_lead_to_sub = pdk.Layer(
-        "ArcLayer",
-        data=arrows_lead_to_sub,
-        get_source_position="start",
-        get_target_position="end",
-        get_source_color="color",
-        get_target_color="color",
-        get_width=5,
-        pickable=True
-    )
-
-    return [marker_layer, arrow_layer_main_to_lead, arrow_layer_lead_to_sub]
-
-# Tooltip
+# ---- Tooltip ----
 tooltip = {
     "html": "<b>{name}</b><br/>{type}<br/>Volume: {volume}",
     "style": {
@@ -398,16 +314,36 @@ tooltip = {
     }
 }
 
-# Final rendering
-markers = aggregate_marker_data(filtered_df)
-arrows_lead_to_sub = create_arrow_data(filtered_df)
-view_state = pdk.ViewState(latitude=markers["lat"].mean(), longitude=markers["lon"].mean(), zoom=3, pitch=35)
+# ---- Render Map 1 ----
+st.subheader("Main Factory → Lead Factory")
+markers1 = aggregate_main_to_lead_markers(filtered_df)
+arrows1 = create_main_to_lead_arrows(filtered_df)
+view_state1 = pdk.ViewState(latitude=markers1["lat"].mean(), longitude=markers1["lon"].mean(), zoom=3, pitch=35)
+
+layer1_markers = pdk.Layer("IconLayer", data=markers1, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
+layer1_arrows = pdk.Layer("ArcLayer", data=arrows1, get_source_position="start", get_target_position="end", get_source_color="color", get_target_color="color", get_width=5, pickable=True)
 
 st.pydeck_chart(pdk.Deck(
-    layers=generate_layers(markers, arrows_lead_to_sub),
-    initial_view_state=view_state,
+    layers=[layer1_markers, layer1_arrows],
+    initial_view_state=view_state1,
     tooltip=tooltip
 ))
+
+# ---- Render Map 2 ----
+st.subheader("Lead Factory → Sub Factory")
+markers2 = aggregate_lead_to_sub_markers(filtered_df)
+arrows2 = create_lead_to_sub_arrows(filtered_df)
+view_state2 = pdk.ViewState(latitude=markers2["lat"].mean(), longitude=markers2["lon"].mean(), zoom=3, pitch=35)
+
+layer2_markers = pdk.Layer("IconLayer", data=markers2, get_icon="icon_data", get_size=4, size_scale=15, get_position='[lon, lat]', pickable=True)
+layer2_arrows = pdk.Layer("ArcLayer", data=arrows2, get_source_position="start", get_target_position="end", get_source_color="color", get_target_color="color", get_width=5, pickable=True)
+
+st.pydeck_chart(pdk.Deck(
+    layers=[layer2_markers, layer2_arrows],
+    initial_view_state=view_state2,
+    tooltip=tooltip
+))
+
 
     # ---- Detail table: per FM → Sub row with % ----
 st.subheader("Detailed Flow Table")
@@ -432,6 +368,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
