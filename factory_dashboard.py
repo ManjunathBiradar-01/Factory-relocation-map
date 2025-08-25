@@ -254,13 +254,13 @@ tooltip = {
 
 # ---- Map 1: Main Factory → Lead Factory ----
 def aggregate_main_to_lead_markers(df):
-    from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Volume": "sum"}).reset_index()
+    from_vol = df.groupby(["Lat_today", "Lon_today", "Factory today"]).agg({"Main Volume": "sum"}).reset_index()
     from_vol["type"] = "From"
-    from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name", "Volume": "from_volume"}, inplace=True)
+    from_vol.rename(columns={"Lat_today": "lat", "Lon_today": "lon", "Factory today": "name"}, inplace=True)
 
-    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead_Pct": "sum"}).reset_index()
+    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
-    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name", "Lead_Pct": "lead_volume"}, inplace=True)
+    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
 
     markers = pd.concat([from_vol, lead_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -272,13 +272,13 @@ def aggregate_main_to_lead_markers(df):
     return markers
 
 def create_main_to_lead_trips(df):
-    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead_Pct"]).copy()
-    df = df[df["Lead_Pct"] > 0]  # Only include rows with volume > 0
+    df = df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lead Voume"]).copy()
+    df = df[df["Lead Volume"] > 0]  # Only include rows with volume > 0
 
     # Group by route to get total volume
     grouped = df.groupby([
         "Factory today", "Plan Lead Factory", "Lat_today", "Lon_today", "Lat_lead", "Lon_lead"
-    ], as_index=False).agg({"Volume": "sum"})
+    ], as_index=False).agg({"Main Volume": "sum"})
 
     grouped["path"] = grouped.apply(lambda row: [
         [row["Lon_today"], row["Lat_today"]],
@@ -294,13 +294,13 @@ def create_main_to_lead_trips(df):
 
 # ---- Map 2: Lead Factory → Sub Factory ----
 def aggregate_lead_to_sub_markers(df):
-    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead_Pct": "sum"}).reset_index()
+    lead_vol = df.groupby(["Lat_lead", "Lon_lead", "Plan Lead Factory"]).agg({"Lead Volume": "sum"}).reset_index()
     lead_vol["type"] = "Lead"
-    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name", "Lead_Pct": "lead_volume"}, inplace=True)
+    lead_vol.rename(columns={"Lat_lead": "lat", "Lon_lead": "lon", "Plan Lead Factory": "name"}, inplace=True)
 
-    sub_vol = df.groupby(["Lat_sub", "Lon_sub", "Plan Sub Factory"]).agg({"Sub_Pct": "sum"}).reset_index()
+    sub_vol = df.groupby(["Lat_sub", "Lon_sub", "Plan Sub Factory"]).agg({"Sub Volume": "sum"}).reset_index()
     sub_vol["type"] = "Sub"
-    sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name", "Sub_Pct": "sub_volume"}, inplace=True)
+    sub_vol.rename(columns={"Lat_sub": "lat", "Lon_sub": "lon", "Plan Sub Factory": "name"}, inplace=True)
 
     markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
@@ -312,8 +312,8 @@ def aggregate_lead_to_sub_markers(df):
     return markers
 
 def create_lead_to_sub_trips(df):
-    df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub_Pct"]).copy()
-    df = df[df["Sub_Pct"] > 0]  # Only include rows where Sub Volume > 0
+    df = df.dropna(subset=["Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub", "Sub Volume"]).copy()
+    df = df[df["Sub Volume"] > 0]  # Only include rows where Sub Volume > 0
     df["path"] = df.apply(lambda row: [
         [row["Lon_lead"], row["Lat_lead"]],
         [row["Lon_sub"], row["Lat_sub"]]
@@ -321,7 +321,7 @@ def create_lead_to_sub_trips(df):
     df["timestamps"] = [[0, 100]] * len(df)
     df["color"] = [[0, 0, 255]] * len(df)
     df["name"] = df["Plan Lead Factory"] + " → " + df["Plan Sub Factory"]
-    df["volume"] = df["Sub_Pct"]
+    df["volume"] = df["Sub Volume"]
     df["type"] = "Sub Volume Shifted"
     return df
 
@@ -404,6 +404,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
