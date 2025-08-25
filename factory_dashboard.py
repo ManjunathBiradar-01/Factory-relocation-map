@@ -269,7 +269,7 @@ def aggregate_main_to_lead_markers(df):
 
     markers = pd.concat([from_vol, lead_vol], ignore_index=True)
     markers["icon_data"] = [{
-        "url": "https://raw.githubusercontent.com/uber-common/deck.gl-data/master/website/icon-atlas.png",
+        "url": "https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/map-location-icon-29.png?raw=true",
         "width": 128,
         "height": 128,
         "anchorY": 128
@@ -311,7 +311,7 @@ def aggregate_lead_to_sub_markers(df):
 
     markers = pd.concat([lead_vol, sub_vol], ignore_index=True)
     markers["icon_data"] = [{
-        "url": "https://raw.githubusercontent.com/uber-common/deck.gl-data/master/website/icon-atlas.png",
+        "url": "https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/map-location-icon-29.png?raw=true",
         "width": 128,
         "height": 128,
         "anchorY": 128
@@ -433,6 +433,7 @@ with tab2:
     - **To** sheet with: `FM`, `Plan Lead Factory`, `Latitude`, `Longitude`, *(optional)* `Lead %`
     - **Sub** sheet with: `FM`, `Plan Sub Factory`, `Latitude`, `Longitude`, *(optional)* `Sub %`
     """)
+
 
 
 
