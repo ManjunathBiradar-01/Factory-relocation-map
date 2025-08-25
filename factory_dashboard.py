@@ -150,7 +150,7 @@ else:
         st.stop()
 
 
-with tab1:
+
     st.title("Factory Production Relocation Dashboard")
 
     sales_region_col = find_sales_region_col(df.columns)
@@ -423,6 +423,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
