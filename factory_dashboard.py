@@ -147,7 +147,8 @@ else:
         st.sidebar.info("Using default dataset from GitHub (upload 'Footprint_SDR 4.xlsx' to override).")
     except Exception as e:
         st.error(f"Failed to load default file from GitHub: {e}")
-        st.stop()
+        st.stop()  # find the error here
+
 
 # ---------------- Dashboard starts here (outside if/else) ----------------
 st.title("Factory Production Relocation Dashboard")
@@ -398,6 +399,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
