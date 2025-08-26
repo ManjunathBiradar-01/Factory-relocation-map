@@ -322,9 +322,11 @@ trips1 = create_main_to_lead_trips(filtered_df)
 trips1["current_time"] = current_time
 
 
+
+# View state
 view_state1 = pdk.ViewState(
-    latitude=markers1["lat"].mean(),
-    longitude=markers1["lon"].mean(),
+    latitude=filtered_df["Lat_today"].mean(),
+    longitude=filtered_df["Lon_today"].mean(),
     zoom=4,
     pitch=35
 )
@@ -409,6 +411,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
