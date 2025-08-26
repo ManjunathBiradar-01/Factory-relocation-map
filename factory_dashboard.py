@@ -318,6 +318,10 @@ filtered_df = filtered_df.dropna(subset=["Lat_today", "Lon_today", "Lat_lead", "
 markers1 = aggregate_main_to_lead_markers(filtered_df)
 trips1 = create_main_to_lead_trips(filtered_df)
 
+# Update current_time for animation
+trips1["current_time"] = current_time
+
+
 view_state1 = pdk.ViewState(
     latitude=markers1["lat"].mean(),
     longitude=markers1["lon"].mean(),
@@ -325,6 +329,8 @@ view_state1 = pdk.ViewState(
     pitch=35
 )
 
+
+markers1 = aggregate_main_to_lead_markers(filtered_df)
 layer1_markers = pdk.Layer(
     "IconLayer",
     data=markers1,
@@ -348,6 +354,10 @@ layer1_trips = pdk.Layer(
     current_time=100,
     pickable=True
 )
+
+
+tooltip = {"text": "{name}\nVolume: {volume}"}
+
 
 st.pydeck_chart(pdk.Deck(
     layers=[layer1_markers, layer1_trips],
@@ -399,6 +409,7 @@ st.dataframe(
     .sort_values(["Factory today", "Plan Lead Factory", "Plan Sub Factory", "FM"], na_position="last"),
     use_container_width=True
 )
+
 
 
 
