@@ -412,62 +412,30 @@ volume_lookup = {
 bounds = []
 
 for _, row in filtered_df.iterrows():
+    lat_lead, lon_lead = row["Lat_lead"], row["Lon_lead"]
     lat_sub, lon_sub = row["Lat_sub"], row["Lon_sub"]
-    lat_lead,  lon_lead  = row["Lat_lead"],  row["Lon_lead"]
 
-    sales_region_line = ""
-    if sales_region_col and pd.notnull(row.get(sales_region_col, None)):
-        sales_region_line = f"<br><b>Sales Region:</b> {row.get(sales_region_col, '')}"
+    lead_name = row.get("Plan Lead Factory", "n/a").strip() or "n/a"
+    sub_name = row.get("Plan Sub Factory", "n/a").strip() or "n/a"
+    route_key = (sub_name, lead_name)
+    total_volume = volume_lookup.get(route_key, None)
 
-    if pd.notnull(lat_today) and pd.notnull(lon_today):
-        folium.Marker(
-            [lat_lead, lon_lead],
-            popup=folium.Popup(
-                f"<b>plan lead factory:</b> {row.get('plan lead factory','')}{sales_region_line}",
-                max_width=320
-            ),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa"),
-            tooltip="Factory Today"
-        ).add_to(m)
-
-    if pd.notnull(lat_sub) and pd.notnull(lon_sub):
-        folium.Marker(
-            [lat_sub, lon_sub],
-            popup=folium.Popup(
-                f"<b></b> {row.get('Plan sub Factory','')}{sales_region_line}",
-                max_width=320
-            ),
-            icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
-            tooltip="Plan sub Factory"
-        ).add_to(m)
-
-    if (pd.notnull(lat_today) and pd.notnull(lon_today) and
-        pd.notnull(lat_lead)  and pd.notnull(lon_lead)):
-
-        
-        sub_name = row.get("Plan Sub Factory", "n/a")
-        if isinstance(sub_name, str):
-            sub_name = sub_name.strip() or "n/a"
-
-        to_name = (row.get("Plan lead Factory", "") or "").strip() or "n/a"
-        route_key = (to_name, sub_name)
-        total_volume = volume_lookup.get(route_key, None)
-        vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
-
-        tooltip_html = f"{from_name} → {to_name}<br>Volume: {vol_txt}"
-        popup_html   = (
-            f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
+    if total_volume and pd.notnull(lat_lead) and pd.notnull(lon_lead) and pd.notnull(lat_sub) and pd.notnull(lon_sub):
+        vol_txt = f"{total_volume:.0f}"
+        tooltip_html = f"{lead_name} → {sub_name}<br>Volume: {vol_txt}"
+        popup_html = (
+            f"<b>From:</b> {lead_name} → <b>To:</b> {sub_name}<br>"
             f"<b>Volume:</b> {vol_txt}"
         )
 
         path = AntPath(
-            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-            color="#e63946",
+            locations=[[lat_lead, lon_lead], [lat_sub, lon_sub]],
+            color="#457b9d",
             weight=5,
             opacity=0.9,
             dash_array=[10, 20],
             delay=800,
-            pulse_color="#ffd166",
+            pulse_color="#a8dadc",
             paused=False,
             reverse=False,
             hardware_accelerated=True
@@ -479,24 +447,23 @@ for _, row in filtered_df.iterrows():
         arrow_js = f"""
         <script>
         try {{
-          var lyr = {path.get_name()};
-          if (lyr && typeof lyr.arrowheads === 'function') {{
-            lyr.arrowheads({{
-              size: '16px',
-              frequency: 'endonly',
-              yawn: 45,
-              fill: true,
-              color: '#e63946'
-            }});
-          }}
+            var lyr = {path.get_name()};
+            if (lyr && typeof lyr.arrowheads === 'function') {{
+                lyr.arrowheads({{
+                    size: '16px',
+                    frequency: 'endonly',
+                    yawn: 45,
+                    fill: true,
+                    color: '#457b9d'
+                }});
+            }}
         }} catch (e) {{
-          console.warn('Arrowheads plugin failed:', e);
+            console.warn('Arrowheads plugin failed:', e);
         }}
         </script>
         """
         m.get_root().html.add_child(Element(arrow_js))
-
-        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+        bounds.extend([[lat_lead, lon_lead], [lat_sub, lon_sub]])
 
 # Optional: Fit map to bounds
 if bounds:
@@ -547,6 +514,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
