@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import folium
 import streamlit as st
+import requests
+from io import BytesIO
+
 
 # ---------- Settings ----------
 st.set_page_config(
@@ -100,12 +103,34 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
     return "n/a"
 
 
-# ---------- Path & load ----------
-excel_path = "Footprint_SDR.xlsx"
+
+# GitHub raw file URL
+DEFAULT_FILE_URL = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
+
+# File uploader
+uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+
+# Use uploaded file or fallback to GitHub
+if uploaded_file is not None:
+    st.session_state["excel_file"] = uploaded_file
+elif "excel_file" in st.session_state:
+    uploaded_file = st.session_state["excel_file"]
+else:
+    try:
+        response = requests.get(DEFAULT_FILE_URL)
+        response.raise_for_status()
+        uploaded_file = BytesIO(response.content)
+        st.session_state["excel_file"] = uploaded_file
+        st.info("Using default file from GitHub.")
+    except Exception as e:
+        st.error(f"Failed to load default file from GitHub.\n\n{e}")
+        st.stop()
+
+# Load data
 try:
-    df = load_data(excel_path)
+    df = load_data(uploaded_file)
 except Exception as e:
-    st.error(f"Failed to load data from '{excel_path}'.\n\n{e}")
+    st.error(f"Failed to load data.\n\n{e}")
     st.stop()
 
 # ---------- UI (updated) ----------
@@ -555,6 +580,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
