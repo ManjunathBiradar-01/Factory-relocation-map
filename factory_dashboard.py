@@ -262,7 +262,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_today, lon_today],
             popup=folium.Popup(
-                f"<b>Factory Today:</b> {row.get('Factory today','')}{sales_region_line}",
+                f"<b>Factory Today:</b> {row.get('Factory today','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="red", icon="industry", prefix="fa"),
@@ -273,7 +273,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>Plan Lead Factory:</b> {row.get('Plan Lead Factory','')}{sales_region_line}",
+                f"<b>Plan Lead Factory:</b> {row.get('Plan Lead Factory','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
@@ -423,7 +423,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>plan lead factory:</b> {row.get('plan lead factory','')}{sales_region_line}",
+                f"<b>plan lead factory:</b> {row.get('plan lead factory','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="red", icon="industry", prefix="fa"),
@@ -434,7 +434,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_sub, lon_sub],
             popup=folium.Popup(
-                f"<b></b> {row.get('Plan sub Factory','')}{sales_region_line}",
+                f"<b></b> {row.get('Plan sub Factory','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
@@ -513,7 +513,7 @@ if bounds:
 
 
 # ---------- Render ----------
-st.subheader("Production Relocation Map")
+st.subheader("Lead Factory to Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
 
 
@@ -547,6 +547,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
