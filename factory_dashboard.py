@@ -15,57 +15,29 @@ st.set_page_config(
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
 def load_data(path: str) -> pd.DataFrame:
-    """
-    Loads and merges the required sheets:
-      - From  (original location data)
-      - To    (lead factory coordinates)
-      - Values (volume %)
-    Performs basic validations and returns a single merged DataFrame.
-    """
-    # Read only the required sheets
+    # Load sheets
     df_from = pd.read_excel(path, sheet_name="From", engine="openpyxl")
-    df_to   = pd.read_excel(path, sheet_name="To", engine="openpyxl")
-    df_val  = pd.read_excel(path, sheet_name="Values", engine="openpyxl")
+    df_to = pd.read_excel(path, sheet_name="To", engine="openpyxl")
+    df_sub = pd.read_excel(path, sheet_name="Sub-Factory", engine="openpyxl")
 
-    # Normalize column names (trim spaces)
-    for d in (df_from, df_to, df_val):
-        d.columns = d.columns.str.strip()
+    # Normalize column names
+    for df in [df_from, df_to, df_sub]:
+        df.columns = df.columns.str.strip()
 
-    # Required columns check (helps debug early)
-    required_from = {"FM", "Name", "Emission", "Engine", "Factory today", "Latitude", "Longitude"}
-    required_to   = {"FM", "Plan Lead Factory", "Latitude", "Longitude"}
-    required_val  = {"FM", "Volume Lead Plant (%)"}
+    # Extract volumes
+    df_to_vol = df_to[["FM", "Volume"]].rename(columns={"Volume": "Volume_To"})
+    df_sub_vol = df_sub[["FM", "Volume"]].rename(columns={"Volume": "Volume_SubFactory"})
 
-    missing = [
-        ("From", required_from - set(df_from.columns)),
-        ("To", required_to - set(df_to.columns)),
-        ("Values", required_val - set(df_val.columns)),
-    ]
-    missing = [(s, cols) for s, cols in missing if cols]
-    if missing:
-        msg = "; ".join([f"{s} missing: {sorted(cols)}" for s, cols in missing])
-        raise ValueError(f"Expected columns not found -> {msg}")
+    # Merge volumes into 'From'
+    merged = df_from.merge(df_to_vol, on="FM", how="left")
+    merged = merged.merge(df_sub_vol, on="FM", how="left")
 
-    # Rename coordinates to avoid collisions
-    df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
-    df_to   = df_to.rename(columns={"Latitude": "Lat_lead",  "Longitude": "Lon_lead"})
-
-    # Keep only necessary columns prior to merge
-    df_to_keep  = df_to[["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]].copy()
-    df_val_keep = df_val[["FM", "Volume Lead Plant (%)"]].copy()
-
-    # Merge on FM
-    merged = (
-        df_from
-        .merge(df_to_keep,  on="FM", how="left")
-        .merge(df_val_keep, on="FM", how="left")
-    )
-
-    # Convert to numeric coords
-    for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]:
-        merged[c] = pd.to_numeric(merged[c], errors="coerce")
+    # Calculate volume shifts
+    merged["Volume_From_To"] = merged["Volume_To"]
+    merged["Volume_To_SubFactory"] = merged["Volume_SubFactory"]
 
     return merged
+
 
 
 # ---------- Helper: Find a 'Sales Region' column ----------
@@ -146,7 +118,6 @@ def load_data(path: BytesIO) -> pd.DataFrame:
 # ---------- Load Data ----------
 try:
     df = load_data(uploaded_file)
-    st.success("Data loaded successfully.")
 except Exception as e:
     st.error(f"Failed to load data.\n\n{e}")
     st.stop()
@@ -599,6 +570,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
