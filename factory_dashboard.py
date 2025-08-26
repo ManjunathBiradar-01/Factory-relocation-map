@@ -104,13 +104,13 @@ def format_coords(lat, lon, decimals: int = 5) -> str:
 
 
 
-# GitHub raw file URL
+
+# ---------- Sidebar File Upload ----------
 DEFAULT_FILE_URL = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
 
-# File uploader
-uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+with st.sidebar:
+    uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
-# Use uploaded file or fallback to GitHub
 if uploaded_file is not None:
     st.session_state["excel_file"] = uploaded_file
 elif "excel_file" in st.session_state:
@@ -121,17 +121,36 @@ else:
         response.raise_for_status()
         uploaded_file = BytesIO(response.content)
         st.session_state["excel_file"] = uploaded_file
-        st.info("Using default file from GitHub.")
+        st.sidebar.info("Using default file from GitHub.")
     except Exception as e:
         st.error(f"Failed to load default file from GitHub.\n\n{e}")
         st.stop()
 
-# Load data
+# ---------- Data loader ----------
+@st.cache_data(show_spinner=False)
+def load_data(path: BytesIO) -> pd.DataFrame:
+    df_from = pd.read_excel(path, sheet_name="From", engine="openpyxl")
+    df_to = pd.read_excel(path, sheet_name="To", engine="openpyxl")
+    df_val = pd.read_excel(path, sheet_name="Values", engine="openpyxl")
+    for d in (df_from, df_to, df_val):
+        d.columns = d.columns.str.strip()
+    df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
+    df_to = df_to.rename(columns={"Latitude": "Lat_lead", "Longitude": "Lon_lead"})
+    df_to_keep = df_to[["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]].copy()
+    df_val_keep = df_val[["FM", "Volume Lead Plant (%)"]].copy()
+    merged = df_from.merge(df_to_keep, on="FM", how="left").merge(df_val_keep, on="FM", how="left")
+    for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]:
+        merged[c] = pd.to_numeric(merged[c], errors="coerce")
+    return merged
+
+# ---------- Load Data ----------
 try:
     df = load_data(uploaded_file)
+    st.success("Data loaded successfully.")
 except Exception as e:
     st.error(f"Failed to load data.\n\n{e}")
     st.stop()
+
 
 # ---------- UI (updated) ----------
 st.title("Factory Production Relocation Dashboard")
@@ -580,6 +599,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
