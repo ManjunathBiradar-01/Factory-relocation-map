@@ -6,76 +6,13 @@ import requests
 from io import BytesIO
 
 
+import streamlit as st
+import pandas as pd
+from io import BytesIO
+import requests
+
 # ---------- Settings ----------
-st.set_page_config(
-    page_title="Bomag SDMs Factory Production Relocation Dashboard",
-    layout="wide"
-)
-
-# ---------- Data loader (define BEFORE calling it) ----------
-@st.cache_data(show_spinner=False)
-def load_data(path: str) -> pd.DataFrame:
-    # Load sheets
-    df_from = pd.read_excel(path, sheet_name="From", engine="openpyxl")
-    df_to = pd.read_excel(path, sheet_name="To", engine="openpyxl")
-    df_sub = pd.read_excel(path, sheet_name="Sub-Factory", engine="openpyxl")
-
-    # Normalize column names
-    for df in [df_from, df_to, df_sub]:
-        df.columns = df.columns.str.strip()
-
-    # Extract volumes
-    df_to_vol = df_to[["FM", "Volume"]].rename(columns={"Volume": "Volume_To"})
-    df_sub_vol = df_sub[["FM", "Volume"]].rename(columns={"Volume": "Volume_SubFactory"})
-
-    # Merge volumes into 'From'
-    merged = df_from.merge(df_to_vol, on="FM", how="left")
-    merged = merged.merge(df_sub_vol, on="FM", how="left")
-
-    # Calculate volume shifts
-    merged["Volume_From_To"] = merged["Volume_To"]
-    merged["Volume_To_SubFactory"] = merged["Volume_SubFactory"]
-
-    return merged
-
-
-
-# ---------- Helper: Find a 'Sales Region' column ----------
-def find_sales_region_col(columns):
-    """
-    Tries to find a sales region column in the merged dataframe.
-    Accepts common variants like:
-      'Sales Region', 'Main Sales Region', 'MainSales Region',
-      'MainSalesRegion', 'SalesRegion', 'main_sales_region'
-    Returns the exact column name if found, otherwise None.
-    """
-    normalized = {c.lower().strip(): c for c in columns}
-    candidates = [
-        "sales region", "main sales region", "mainsales region",
-        "mainsalesregion", "salesregion", "main_sales_region"
-    ]
-    for key in candidates:
-        if key in normalized:
-            return normalized[key]
-
-    # Fallback: any column containing both 'sales' and 'region'
-    for c in columns:
-        cl = c.lower()
-        if "sales" in cl and "region" in cl:
-            return c
-
-    return None
-
-
-# ---------- Small utility: format coordinates ----------
-def format_coords(lat, lon, decimals: int = 5) -> str:
-    """Return a friendly 'lat, lon' string or 'n/a' if missing."""
-    if pd.notnull(lat) and pd.notnull(lon):
-        return f"{lat:.{decimals}f}, {lon:.{decimals}f}"
-    return "n/a"
-
-
-
+st.set_page_config(page_title="Factory Dashboard", layout="wide")
 
 # ---------- Sidebar File Upload ----------
 DEFAULT_FILE_URL = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Footprint_SDR.xlsx"
@@ -98,29 +35,66 @@ else:
         st.error(f"Failed to load default file from GitHub.\n\n{e}")
         st.stop()
 
-# ---------- Data loader ----------
+# ---------- Data Loader ----------
 @st.cache_data(show_spinner=False)
 def load_data(path: BytesIO) -> pd.DataFrame:
     df_from = pd.read_excel(path, sheet_name="From", engine="openpyxl")
     df_to = pd.read_excel(path, sheet_name="To", engine="openpyxl")
-    df_val = pd.read_excel(path, sheet_name="Values", engine="openpyxl")
-    for d in (df_from, df_to, df_val):
-        d.columns = d.columns.str.strip()
-    df_from = df_from.rename(columns={"Latitude": "Lat_today", "Longitude": "Lon_today"})
-    df_to = df_to.rename(columns={"Latitude": "Lat_lead", "Longitude": "Lon_lead"})
-    df_to_keep = df_to[["FM", "Plan Lead Factory", "Lat_lead", "Lon_lead"]].copy()
-    df_val_keep = df_val[["FM", "Volume Lead Plant (%)"]].copy()
-    merged = df_from.merge(df_to_keep, on="FM", how="left").merge(df_val_keep, on="FM", how="left")
-    for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead"]:
-        merged[c] = pd.to_numeric(merged[c], errors="coerce")
+    df_sub = pd.read_excel(path, sheet_name="Sub-Factory", engine="openpyxl")
+
+    for df in [df_from, df_to, df_sub]:
+        df.columns = df.columns.str.strip()
+
+    df_to_vol = df_to[["FM", "Volume"]].rename(columns={"Volume": "Volume_To"})
+    df_sub_vol = df_sub[["FM", "Volume"]].rename(columns={"Volume": "Volume_SubFactory"})
+
+    merged = df_from.merge(df_to_vol, on="FM", how="left")
+    merged = merged.merge(df_sub_vol, on="FM", how="left")
+
+    merged["Volume_From_To"] = merged["Volume_To"]
+    merged["Volume_To_SubFactory"] = merged["Volume_SubFactory"]
+
     return merged
 
-# ---------- Load Data ----------
+# ---------- Helper: Find a 'Sales Region' column ----------
+def find_sales_region_col(columns):
+    normalized = {c.lower().strip(): c for c in columns}
+    candidates = [
+        "sales region", "main sales region", "mainsales region",
+        "mainsalesregion", "salesregion", "main_sales_region"
+    ]
+    for key in candidates:
+        if key in normalized:
+            return normalized[key]
+    for c in columns:
+        cl = c.lower()
+        if "sales" in cl and "region" in cl:
+            return c
+    return None
+
+# ---------- Small utility: format coordinates ----------
+def format_coords(lat, lon, decimals: int = 5) -> str:
+    if pd.notnull(lat) and pd.notnull(lon):
+        return f"{lat:.{decimals}f}, {lon:.{decimals}f}"
+    return "n/a"
+
+# ---------- Load and Display Data ----------
 try:
     df = load_data(uploaded_file)
+    st.success("Data loaded successfully.")
+
+    sales_region_col = find_sales_region_col(df.columns)
+    df["Factory Location"] = df.apply(lambda r: format_coords(r["Latitude"], r["Longitude"]), axis=1)
+
+    st.subheader("Merged Data with Volume Shifts")
+    display_cols = ["FM", "Name", "Factory today", "Volume", "Volume_From_To", "Volume_To_SubFactory", "Factory Location"]
+    if sales_region_col:
+        display_cols.insert(3, sales_region_col)
+    st.dataframe(df[display_cols])
+
 except Exception as e:
-    st.error(f"Failed to load data.\n\n{e}")
-    st.stop()
+    st.error(f"Failed to process data.\n\n{e}")
+
 
 
 # ---------- UI (updated) ----------
@@ -570,6 +544,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
