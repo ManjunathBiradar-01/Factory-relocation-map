@@ -402,6 +402,7 @@ m.get_root().header.add_child(Element(css))
 
 # ---------- Group volume by route ----------
 grouped = filtered_df.groupby(["Plan Sub Factory", "Plan Lead Factory"])["sub_vol"].sum().reset_index()
+grouped = grouped[grouped["sub_vol"] > 0]  # ✅ Only keep routes with volume > 0
 volume_lookup = {
     (row["Plan Sub Factory"], row["Plan Lead Factory"]): row["sub_vol"]
     for _, row in grouped.iterrows()
@@ -546,6 +547,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
