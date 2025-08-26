@@ -251,9 +251,9 @@ volume_lookup = {
 bounds = []
 
 factory_name = row.get("Factory today", "n/a")
-    lead_factory_name = row.get("Plan Lead Factory", "n/a")
-    main_vol = row.get("main_vol", "n/a")
-    lead_vol = row.get("lead_vol", "n/a")
+lead_factory_name = row.get("Plan Lead Factory", "n/a")
+main_vol = row.get("main_vol", "n/a")
+lead_vol = row.get("lead_vol", "n/a")
 
     # 🔴 Marker for Factory Today
     if pd.notnull(lat_today) and pd.notnull(lon_today):
@@ -571,6 +571,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
