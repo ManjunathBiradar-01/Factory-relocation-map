@@ -429,7 +429,7 @@ for _, row in filtered_df.iterrows():
             tooltip="Factory Today"
         ).add_to(m)
 
-    if pd.notnull(lat_lead) and pd.notnull(lon_lead):
+    if pd.notnull(lat_sub) and pd.notnull(lon_sub):
         folium.Marker(
             [lat_sub, lon_sub],
             popup=folium.Popup(
@@ -543,6 +543,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
