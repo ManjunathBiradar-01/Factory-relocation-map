@@ -194,58 +194,6 @@ import numpy as np
 from folium.plugins import AntPath
 from folium import JavascriptLink, Element
 
-# ---------- Map centering ----------
-coords = []
-
-if not filtered_df.empty:
-    coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
-    coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
-
-center_lat = float(np.mean([c[0] for c in coords])) if coords else 20.0
-center_lon = float(np.mean([c[1] for c in coords])) if coords else 0.0
-
-m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
-
-# Load Leaflet arrowheads plugin
-m.get_root().header.add_child(JavascriptLink(
-    "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
-))
-
-# ---------- Custom CSS ----------
-FONT_SIZE_PX = 16
-css = f"""
-<style>
-  .leaflet-tooltip {{
-    font-size: {FONT_SIZE_PX}px;
-    font-weight: 600;
-    color: #111;
-  }}
-  .leaflet-popup-content {{
-    font-size: {FONT_SIZE_PX}px;
-    line-height: 1.35;
-    color: #111;
-  }}
-  .leaflet-popup-content-wrapper {{
-    padding: 8px 12px;
-  }}
-  @media (max-width: 768px) {{
-    .leaflet-tooltip,
-    .leaflet-popup-content {{
-      font-size: {FONT_SIZE_PX + 2}px;
-    }}
-  }}
-</style>
-"""
-m.get_root().header.add_child(Element(css))
-
-# ---------- Group volume by route ----------
-grouped = filtered_df.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
-volume_lookup = {
-    (row["Factory today"], row["Plan Lead Factory"]): row["lead_vol"]
-    for _, row in grouped.iterrows()
-}
-
-# ---------- Plot markers & flows ----------
 import folium
 from folium.plugins import AntPath
 from folium import JavascriptLink, Element
@@ -303,43 +251,40 @@ volume_lookup = {
 # Plot markers and flows
 bounds = []
 for _, row in filtered_df.iterrows():
-    factory_name = row.get("Factory today", "n/a")
-    lead_factory_name = row.get("Plan Lead Factory", "n/a")
+    factory_name = row.get("Factory today", "n/a").strip()
+    lead_factory_name = row.get("Plan Lead Factory", "n/a").strip()
     main_vol = row.get("main_vol", "n/a")
     lead_vol = row.get("lead_vol", "n/a")
     lat_today = row.get("Lat_today", None)
     lon_today = row.get("Lon_today", None)
     lat_lead = row.get("Lat_lead", None)
     lon_lead = row.get("Lon_lead", None)
-
-    # Tooltip and popup content
     sales_region = row.get(sales_region_col, "n/a") if sales_region_col else "n/a"
-    tooltip_today = f"{factory_name} | Main Vol: {main_vol}"
-    popup_today = f"<b>Factory:</b> {factory_name}<br><b>Main Volume:</b> {main_vol}<br><b>Sales Region:</b> {sales_region}"
-
-    tooltip_lead = f"{lead_factory_name} | Lead Vol: {lead_vol}"
-    popup_lead = f"<b>Lead Factory:</b> {lead_factory_name}<br><b>Lead Volume:</b> {lead_vol}<br><b>Sales Region:</b> {sales_region}"
 
     # Add markers
     if pd.notnull(lat_today) and pd.notnull(lon_today):
+        tooltip = f"{factory_name} | Main Vol: {main_vol}"
+        popup = f"<b>Factory:</b> {factory_name}<br><b>Main Volume:</b> {main_vol}<br><b>Sales Region:</b> {sales_region}"
         folium.Marker(
             [lat_today, lon_today],
-            tooltip=tooltip_today,
-            popup=folium.Popup(popup_today, max_width=320),
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="red", icon="industry", prefix="fa")
         ).add_to(m)
 
     if pd.notnull(lat_lead) and pd.notnull(lon_lead):
+        tooltip = f"{lead_factory_name} | Lead Vol: {lead_vol}"
+        popup = f"<b>Lead Factory:</b> {lead_factory_name}<br><b>Lead Volume:</b> {lead_vol}<br><b>Sales Region:</b> {sales_region}"
         folium.Marker(
             [lat_lead, lon_lead],
-            tooltip=tooltip_lead,
-            popup=folium.Popup(popup_lead, max_width=320),
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
 
-    # Draw flow path
+    # Draw flow path with summed volume
     if pd.notnull(lat_today) and pd.notnull(lon_today) and pd.notnull(lat_lead) and pd.notnull(lon_lead):
-        route_key = (factory_name.strip(), lead_factory_name.strip())
+        route_key = (factory_name, lead_factory_name)
         total_volume = volume_lookup.get(route_key, None)
         vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
 
@@ -588,6 +533,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
