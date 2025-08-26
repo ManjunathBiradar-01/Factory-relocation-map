@@ -289,10 +289,10 @@ for _, row in filtered_df.iterrows():
         total_volume = volume_lookup.get(route_key, None)
         vol_txt = f"{total_volume:.0f}%" if total_volume is not None else "n/a"
 
-        tooltip_html = f"{from_name} → {to_name}<br>Volume: {lead_vol}"
+        tooltip_html = f"{from_name} → {to_name}<br>Volume: {grouped}"
         popup_html   = (
             f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
-            f"<b>Volume:</b> {lead_vol}"
+            f"<b>Volume:</b> {grouped}"
         )
 
         path = AntPath(
@@ -559,6 +559,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
