@@ -110,7 +110,7 @@ def load_data(path: BytesIO) -> pd.DataFrame:
     df_to = df_to.rename(columns={"Latitude": "Lat_lead", "Longitude": "Lon_lead", "Volume" : "lead_vol"})
     df_sub = df_sub.rename(columns={"Latitude": "Lat_sub", "Longitude": "Lon_sub", "Volume" : "sub_vol"})
     df_to_keep = df_to[["FM", "Name", "Plan Lead Factory", "Lat_lead", "Lon_lead", "lead_vol" ]].copy()
-    df_sub_keep = df_val[["FM","Name", "Plan Sub Factory", "Lat_sub", "Lon_sub",  "sub_vol" ]].copy()
+    df_sub_keep = df_sub[["FM","Name", "Plan Sub Factory", "Lat_sub", "Lon_sub",  "sub_vol" ]].copy()
     merged = df_from.merge(df_to_keep, on="FM", how="left").merge(df_sub_keep, on="FM", how="left")
     for c in ["Lat_today", "Lon_today", "Lat_lead", "Lon_lead", "Lat_sub", "Lon_sub"]:
         merged[c] = pd.to_numeric(merged[c], errors="coerce")
@@ -559,6 +559,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
