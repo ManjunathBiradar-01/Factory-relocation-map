@@ -416,7 +416,7 @@ for _, row in filtered_df.iterrows():
     lat_sub, lon_sub = row["Lat_sub"], row["Lon_sub"]
 
     lead_name = row.get("Plan Lead Factory", "n/a").strip() or "n/a"
-    sub_name = row.get("Plan Sub Factory", "n/a").strip() or "n/a"
+    sub_name = str(row.get("Plan Sub Factory", "n/a").strip() or "n/a")
     route_key = (sub_name, lead_name)
     total_volume = volume_lookup.get(route_key, None)
 
@@ -514,6 +514,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
