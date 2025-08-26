@@ -273,7 +273,7 @@ for index, row in df.iterrows():
         ).add_to(m)
 
     # 🔵 Marker for Lead Factory
-    if pd.notnull(Lat_lead) and pd.notnull(Lon_lead):
+    if pd.notnull(lat_lead) and pd.notnull(lon_lead):
         tooltip = f"{lead_factory_name} | Lead Vol: {lead_vol}"
         popup = f"<b>Lead Factory:</b> {lead_factory_name}<br><b>Lead Volume:</b> {lead_vol}"
         folium.Marker(
@@ -577,6 +577,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
