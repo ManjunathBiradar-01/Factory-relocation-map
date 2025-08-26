@@ -443,7 +443,8 @@ for _, row in filtered_df.iterrows():
     if (pd.notnull(lat_today) and pd.notnull(lon_today) and
         pd.notnull(lat_lead)  and pd.notnull(lon_lead)):
 
-        from_name = (row.get("plan lead factory", "") or "").strip() or "n/a"
+        
+        sub_name = (row.get("Plan Sub Factory", "") or "").strip() or "n/a"
         to_name   = (row.get("Plan sub Factory", "") or "").strip() or "n/a"
         route_key = (to_name, sub_name)
         total_volume = volume_lookup.get(route_key, None)
@@ -542,6 +543,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
