@@ -411,7 +411,7 @@ volume_lookup = {
 bounds = []
 
 for _, row in filtered_df.iterrows():
-    lat_sub, lon_sub = row["lat_sub"], row["lon_sub"]
+    lat_sub, lon_sub = row["Lat_sub"], row["lon_sub"]
     lat_lead,  lon_lead  = row["Lat_lead"],  row["Lon_lead"]
 
     sales_region_line = ""
@@ -542,6 +542,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
