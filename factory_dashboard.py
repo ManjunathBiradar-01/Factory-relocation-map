@@ -273,7 +273,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>Plan Lead Factory:</b> {row.get('Plan Lead Factory','')}",
+                f"<b></b> {row.get('Plan Lead Factory','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
@@ -423,7 +423,7 @@ for _, row in filtered_df.iterrows():
         folium.Marker(
             [lat_lead, lon_lead],
             popup=folium.Popup(
-                f"<b>plan lead factory:</b> {row.get('plan lead factory','')}",
+                f"<b></b> {row.get('plan lead factory','')}",
                 max_width=320
             ),
             icon=folium.Icon(color="red", icon="industry", prefix="fa"),
@@ -547,6 +547,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
