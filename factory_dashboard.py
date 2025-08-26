@@ -450,10 +450,10 @@ for _, row in filtered_df.iterrows():
             sub_name = sub_name.strip() or "n/a"
 
         to_name_raw = row.get("Plan lead Factory", "n/a")
-        to_name = to_name_raw.strip() if isinstance(to_name_raw, str) else str(to_name_raw) or "n/a"
-        route_key = (to_name, sub_name)
-        total_volume = volume_lookup.get(route_key, None)
-        vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
+    to_name = to_name_raw.strip() if isinstance(to_name_raw, str) else str(to_name_raw) or "n/a"
+    route_key = (to_name, sub_name)
+    total_volume = volume_lookup.get(route_key, None)
+    vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
 
         tooltip_html = f"{from_name} → {to_name}<br>Volume: {vol_txt}"
         popup_html   = (
@@ -547,6 +547,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
