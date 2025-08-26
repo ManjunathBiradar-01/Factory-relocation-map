@@ -256,9 +256,13 @@ for index, row in df.iterrows():
     lead_factory_name = row.get("Plan Lead Factory", "n/a")
     main_vol = row.get("main_vol", "n/a")
     lead_vol = row.get("lead_vol", "n/a")
+    
+    lat_today = row.get("Lat_today", None)
+    lon_today = row.get("Lon_today", None)
+    lat_lead = row.get("Lat_lead", None)
+    lon_lead = row.get("Lon_lead", None)
 
-    # 🔴 Marker for Factory Today
-    if pd.notnull(Lat_today) and pd.notnull(Lon_today):
+    if pd.notnull(lat_today) and pd.notnull(lon_today):
         tooltip = f"{factory_name} | Main Vol: {main_vol}"
         popup = f"<b>Factory:</b> {factory_name}<br><b>Main Volume:</b> {main_vol}"
         folium.Marker(
@@ -573,6 +577,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
