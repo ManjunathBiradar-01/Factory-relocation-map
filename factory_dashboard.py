@@ -455,49 +455,49 @@ for _, row in filtered_df.iterrows():
     total_volume = volume_lookup.get(route_key, None)
     vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
 
-        tooltip_html = f"{from_name} → {to_name}<br>Volume: {vol_txt}"
-        popup_html   = (
-            f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
-            f"<b>Volume:</b> {vol_txt}"
-        )
+    tooltip_html = f"{from_name} → {to_name}<br>Volume: {vol_txt}"
+    popup_html   = (
+        f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
+        f"<b>Volume:</b> {vol_txt}"
+    )
 
-        path = AntPath(
-            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-            color="#e63946",
-            weight=5,
-            opacity=0.9,
-            dash_array=[10, 20],
-            delay=800,
-            pulse_color="#ffd166",
-            paused=False,
-            reverse=False,
-            hardware_accelerated=True
-        )
-        folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-        folium.Popup(popup_html, max_width=320).add_to(path)
-        path.add_to(m)
+    path = AntPath(
+        locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
+        color="#e63946",
+        weight=5,
+        opacity=0.9,
+        dash_array=[10, 20],
+        delay=800,
+        pulse_color="#ffd166",
+        paused=False,
+        reverse=False,
+        hardware_accelerated=True
+    )
+    folium.Tooltip(tooltip_html, sticky=True).add_to(path)
+    folium.Popup(popup_html, max_width=320).add_to(path)
+    path.add_to(m)
 
-        arrow_js = f"""
-        <script>
-        try {{
-          var lyr = {path.get_name()};
-          if (lyr && typeof lyr.arrowheads === 'function') {{
-            lyr.arrowheads({{
-              size: '16px',
-              frequency: 'endonly',
-              yawn: 45,
-              fill: true,
-              color: '#e63946'
-            }});
-          }}
-        }} catch (e) {{
-          console.warn('Arrowheads plugin failed:', e);
+    arrow_js = f"""
+    <script>
+    try {{
+        var lyr = {path.get_name()};
+        if (lyr && typeof lyr.arrowheads === 'function') {{
+        lyr.arrowheads({{
+            size: '16px',
+            frequency: 'endonly',
+            yawn: 45,
+            fill: true,
+            color: '#e63946'
+        }});
         }}
-        </script>
-        """
-        m.get_root().html.add_child(Element(arrow_js))
+    }} catch (e) {{
+        console.warn('Arrowheads plugin failed:', e);
+    }}
+    </script>
+    """
+    m.get_root().html.add_child(Element(arrow_js))
 
-        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+    bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
 # Optional: Fit map to bounds
 if bounds:
     m.fit_bounds(bounds)
@@ -547,6 +547,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
