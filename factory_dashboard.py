@@ -279,7 +279,7 @@ for _, row in filtered_df.iterrows():
       lon_today = row.get("Lon_today", None)
       lat_lead = row.get("Lat_lead", None)
       lon_lead = row.get("Lon_lead", None)
-    sales_region = row.get(sales_region_col, "n/a") if sales_region_col else "n/a"
+      sales_region = row.get(sales_region_col, "n/a") if sales_region_col else "n/a"
 
     # Add markers
     if pd.notnull(lat_today) and pd.notnull(lon_today):
@@ -553,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
