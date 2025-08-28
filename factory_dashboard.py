@@ -420,30 +420,31 @@ m.get_root().html.add_child(Element(arrowheads_once_js))
 if bounds:
     m.fit_bounds(bounds)
 # Render in Streamlit
-st.subheader("Production Relocation Map")
+st.subheader("Manin Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
 
 
 
-
+#2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
 
 # Ensure names match between grouping and lookup (strip whitespace)
-for col in ["Factory today", "Plan Lead Factory"]:
+for col in ["Plan Lead Factory", "Plan Sub Factory"]:
     if col in filtered_df.columns:
         filtered_df[col] = filtered_df[col].astype(str).str.strip()
 
 # Coerce volume columns to numeric
-for vcol in ["lead_vol", "main_vol"]:
+for vcol in ["main_vol", "sub_vol"]:
     if vcol in filtered_df.columns:
         filtered_df[vcol] = pd.to_numeric(filtered_df[vcol], errors="coerce")
 
 # Center map based on available coordinates
 coords = []
 if not filtered_df.empty:
-    coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
     coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
+    coords.extend(filtered_df[["Lat_sub", "Lon_sub"]].dropna().values.tolist())
+
 
 center_lat = float(np.mean([c[0] for c in coords])) if coords else 20.0
 center_lon = float(np.mean([c[1] for c in coords])) if coords else 0.0
@@ -483,10 +484,10 @@ css = f"""
 m.get_root().header.add_child(Element(css))
 
 # === 1) Build unique coordinates per factory ===
-coords_today = (
-    filtered_df.dropna(subset=["Factory today", "Lat_today", "Lon_today"])
-    .drop_duplicates("Factory today")
-    .set_index("Factory today")[["Lat_today", "Lon_today"]]
+coords_sub = (
+    filtered_df.dropna(subset=["Plan Sub Factory", "Lat_sub", "Lon_sub"])
+    .drop_duplicates("Plan Sub Factory")
+    .set_index("Plan Sub Factory")[["Lat_sub", "Lon_sub"]]
     .to_dict("index")
 )
 
@@ -499,67 +500,44 @@ coords_lead = (
 
 # === 2) Aggregate volumes ===
 routes = (
-    filtered_df.dropna(subset=["Factory today", "Plan Lead Factory"])
-    .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["lead_vol"]
-    .sum()
-)
-
-main_by_factory = (
-    filtered_df.dropna(subset=["Factory today"])
-    .groupby("Factory today", as_index=False)["main_vol"]
+    filtered_df.dropna(subset=["Plan Lead Factory", "Plan Sub Factory"])
+    .groupby(["Plan Lead Factory", "Plan Sub Factory"], as_index=False)["sub_vol"]
     .sum()
 )
 
 lead_by_factory = (
     filtered_df.dropna(subset=["Plan Lead Factory"])
-    .groupby("Plan Lead Factory", as_index=False)["lead_vol"]
+    .groupby("Plan Lead Factory", as_index=False)["main_vol"]
+    .sum()
+)
+
+sub_by_factory = (
+    filtered_df.dropna(subset=["Plan Sub Factory"])
+    .groupby("Plan Lead Factory", as_index=False)["sub_vol"]
     .sum()
 )
 
 # (Optional) representative Sales Region (mode)
 if sales_region_col:
     region_today = (
-        filtered_df.dropna(subset=["Factory today"])
-        .groupby("Factory today")[sales_region_col]
+        filtered_df.dropna(subset=["lan Sub Factory"])
+        .groupby("lan Sub Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
-    region_lead = (
-        filtered_df.dropna(subset=["Plan Lead Factory"])
-        .groupby("Plan Lead Factory")[sales_region_col]
+    region_sub = (
+        filtered_df.dropna(subset=["Plan Sub Factory"])
+        .groupby("Plan Sub Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
 else:
     # safe defaults so we can reference below
-    region_today = pd.Series(dtype="object")
     region_lead = pd.Series(dtype="object")
+    region_sub = pd.Series(dtype="object")
 
-# === 3) 'Today' factory markers once each (aggregated main_vol) ===
+# === 3) 'lead' factory markers once each (aggregated main_vol) ===
 for _, r in main_by_factory.iterrows():
-    f = r["Factory today"]
+    f = r["Plan Sub Factory"]
     if f in coords_today:
-        lat_today = coords_today[f]["Lat_today"]
-        lon_today = coords_today[f]["Lon_today"]
-        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
-        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
-
-        tooltip = f"{f} | Main Vol: {vol_txt}"
-        popup = (
-            f"<b>Factory:</b> {f}"
-            f"<br><b>Main Volume:</b> {vol_txt}"
-            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-        )
-
-        folium.Marker(
-            [lat_today, lon_today],
-            tooltip=tooltip,
-            popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
-        ).add_to(m)
-
-# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
-for _, r in lead_by_factory.iterrows():
-    f = r["Plan Lead Factory"]
-    if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
         vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
@@ -567,7 +545,7 @@ for _, r in lead_by_factory.iterrows():
 
         tooltip = f"{f} | Lead Vol: {vol_txt}"
         popup = (
-            f"<b>Lead Factory:</b> {f}"
+            f"<b>Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
@@ -576,31 +554,54 @@ for _, r in lead_by_factory.iterrows():
             [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
+        ).add_to(m)
+
+# === 4) 'sub' factory markers once each (aggregated lead_vol) ===
+for _, r in sub_by_factory.iterrows():
+    f = r["Plan Sub Factory"]
+    if f in coords_lead:
+        lat_sub = coords_sub[f]["Lat_sub"]
+        lon_sub = coords_sub[f]["Lon_sub"]
+        vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
+        sr = (region_sub[f] if sales_region_col and f in region_sub.index else "n/a")
+
+        tooltip = f"{f} | Sub Vol: {vol_txt}"
+        popup = (
+            f"<b>Sub Factory:</b> {f}"
+            f"<br><b>Sub Volume:</b> {vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+        )
+
+        folium.Marker(
+            [lat_sub, lon_sub],
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
 
 # === 5) Draw each route once with summed lead_vol ===
 bounds = []
 for _, r in routes.iterrows():
-    fr = r["Factory today"]
-    to = r["Plan Lead Factory"]
-    vol = r["lead_vol"]
+    fr = r["Plan Lead Factory"]
+    to = r["Plan Sub Factory"]
+    vol = r["sub_vol"]
 
     if fr in coords_today and to in coords_lead:
-        lat_today = coords_today[fr]["Lat_today"]
-        lon_today = coords_today[fr]["Lon_today"]
-        lat_lead = coords_lead[to]["Lat_lead"]
-        lon_lead = coords_lead[to]["Lon_lead"]
+        lat_lead = coords_lead[fr]["Lat_lead"]
+        lon_lead = coords_lead[fr]["Lon_lead"]
+        lat_sub = coords_sub[to]["Lat_sub"]
+        lon_sub = coords_sub[to]["Lon_sub"]
 
         vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
         tooltip_html = f"{fr} → {to}<br>Volume: {vol_txt}"
         popup_html = (
-            f"<b>From:</b> {fr} → <b>To:</b> {to}"
+            f"<b>Lead:</b> {fr} → <b>Sub:</b> {to}"
             f"<br><b>Volume:</b> {vol_txt}"
         )
 
         path = AntPath(
-            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
+            locations=[[lat_lead, lon_lead], [lat_sub, lon_sub]],
             color="#e63946",
             weight=5,
             opacity=0.9,
@@ -615,7 +616,7 @@ for _, r in routes.iterrows():
         folium.Popup(popup_html, max_width=320).add_to(path)
         path.add_to(m)
 
-        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+        bounds.extend([[lat_lead, lon_lead], [lat_sub, lon_sub]])
 
 # === 5b) Apply arrowheads ONCE after all paths are on the map ===
 arrowheads_once_js = f"""
@@ -651,8 +652,10 @@ m.get_root().html.add_child(Element(arrowheads_once_js))
 # === 6) Fit map to all aggregated bounds ===
 if bounds:
     m.fit_bounds(bounds)
+
+
 # Render in Streamlit
-st.subheader("Production Relocation Map")
+st.subheader("Lead Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
 
 
@@ -686,6 +689,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
