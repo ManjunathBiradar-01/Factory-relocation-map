@@ -652,6 +652,9 @@ for _, r in sub_by_factory.iterrows():
         sub_vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
         sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
 
+
+        print("lead_by_factory columns:", lead_by_factory.columns.tolist())
+
         # Get lead volume for this sub factory
         lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(),"lead_vol"].sum()
         lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
@@ -809,6 +812,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
