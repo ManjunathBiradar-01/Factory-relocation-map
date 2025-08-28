@@ -605,70 +605,54 @@ else:
     region_lead = pd.Series(dtype="object")
     region_sub = pd.Series(dtype="object")
 
-# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
-for _, r in sub_by_factory.iterrows():
-    f = r["Plan Sub Factory"]
-    if f in coords_sub:
-        lat_sub = coords_sub[f]["Lat_sub"]
-        lon_sub = coords_sub[f]["Lon_sub"]
+# === 3) 'Today' factory markers once each (aggregated main_vol) ===
+for _, r in main_by_factory.iterrows():
+    f = r["Factory today"]
+    if f in coords_today:
+        lat_today = coords_today[f]["Lat_today"]
+        lon_today = coords_today[f]["Lon_today"]
+        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
+        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
 
-        sub_vol_value = r.get("sub_vol", None)
-        sub_vol_txt = f"{sub_vol_value:,.0f}" if pd.notnull(sub_vol_value) else "n/a"
-
-        # Try to get lead volume for the same factory name
-        lead_vol_sum = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"] == f, "lead_vol"].sum() \
-            if "Plan Lead Factory" in lead_by_factory.columns else None
-        lead_vol_txt = f"{lead_vol_sum:,.0f}" if pd.notnull(lead_vol_sum) else "n/a"
-
-        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
-
-        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
+        tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
         popup = (
-            f"<b>Sub Factory:</b> {f}<br>"
-            f"<b>Sub Volume:</b> {sub_vol_txt}<br>"
-            f"<b>Lead Volume:</b> {lead_vol_txt}"
+            f"<b>Factory:</b> {f}"
+            f"<br><b>Main Volume:</b> {vol_txt}"
+            f"<br><b>Lead Volume:</b> {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
         folium.Marker(
-            [lat_sub, lon_sub],
+            [lat_today, lon_today],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="green", icon="industry", prefix="fa")
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
         ).add_to(m)
 
+# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
+for _, r in lead_by_factory.iterrows():
+    f = r["Plan Lead Factory"]
+    if f in coords_lead:
+        lat_lead = coords_lead[f]["Lat_lead"]
+        lon_lead = coords_lead[f]["Lon_lead"]
+        vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
-# === 4) Sub factory markers once each (aggregated sub_vol) ===
-for _, r in sub_by_factory.iterrows():
-    f = r["Plan Sub Factory"]
-    if f in coords_sub:
-        lat_sub = coords_sub[f]["Lat_sub"]
-        lon_sub = coords_sub[f]["Lon_sub"]
-        
-        # Safely get sub volume
-        sub_vol_value = r.get("sub_vol", None)
-        sub_vol_txt = f"{sub_vol_value:,.0f}" if pd.notnull(sub_vol_value) else "n/a"
-        
-        # Safely get lead volume sum
-        lead_vol_sum = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"] == f, "lead_vol"].sum()
-        lead_vol_txt = f"{lead_vol_sum:,.0f}" if pd.notnull(lead_vol_sum) else "n/a"
-        
-        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
-
-        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
+        tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else "n/a"
         popup = (
-            f"<b>Sub Factory:</b> {f}<br>"
-            f"<b>Sub Volume:</b> {sub_vol_txt}<br>"
-            f"<b>Lead Volume:</b> {lead_vol_txt}"
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Lead Volume:</b> {vol_txt}"
+            f"<br><b>Main Volume:</b> {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
         folium.Marker(
-            [lat_sub, lon_sub],
+            [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="green", icon="industry", prefix="fa")
-        )
+            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+        ).add_to(m)
+
 # === 5) Draw each route once with summed sub_vol ===
 bounds = []
 for _, r in routes.iterrows():
@@ -791,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
