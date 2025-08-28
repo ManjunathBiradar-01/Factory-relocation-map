@@ -606,35 +606,35 @@ else:
     region_sub = pd.Series(dtype="object")
 
 # === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
-for _, r in lead_by_factory.iterrows():
-    f = r["Plan Lead Factory"]
-    if f in coords_lead:
-        lat_lead = coords_lead[f]["Lat_lead"]
-        lon_lead = coords_lead[f]["Lon_lead"]
-        
-        # Safely get lead volume
-        lead_vol_value = r.get("lead_vol", None)
-        lead_vol_txt = f"{lead_vol_value:,.0f}" if pd.notnull(lead_vol_value) else "n/a"
-        
-        # Safely get sub volume sum
-        sub_vol_sum = sub_by_factory.loc[sub_by_factory["Plan Lead Factory"] == f, "sub_vol"].sum()
-        sub_vol_txt = f"{sub_vol_sum:,.0f}" if pd.notnull(sub_vol_sum) else "n/a"
-        
-        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
+for _, r in sub_by_factory.iterrows():
+    f = r["Plan Sub Factory"]
+    if f in coords_sub:
+        lat_sub = coords_sub[f]["Lat_sub"]
+        lon_sub = coords_sub[f]["Lon_sub"]
 
-        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
+        sub_vol_value = r.get("sub_vol", None)
+        sub_vol_txt = f"{sub_vol_value:,.0f}" if pd.notnull(sub_vol_value) else "n/a"
+
+        # Try to get lead volume for the same factory name
+        lead_vol_sum = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"] == f, "lead_vol"].sum() \
+            if "Plan Lead Factory" in lead_by_factory.columns else None
+        lead_vol_txt = f"{lead_vol_sum:,.0f}" if pd.notnull(lead_vol_sum) else "n/a"
+
+        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
+
+        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
         popup = (
-            f"<b>Lead Factory:</b> {f}<br>"
-            f"<b>Lead Volume:</b> {lead_vol_txt}<br>"
-            f"<b>Sub Volume:</b> {sub_vol_txt}"
+            f"<b>Sub Factory:</b> {f}<br>"
+            f"<b>Sub Volume:</b> {sub_vol_txt}<br>"
+            f"<b>Lead Volume:</b> {lead_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
         folium.Marker(
-            [lat_lead, lon_lead],
+            [lat_sub, lon_sub],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+            icon=folium.Icon(color="green", icon="industry", prefix="fa")
         ).add_to(m)
 
 
@@ -791,6 +791,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
