@@ -410,34 +410,12 @@ for _, r in routes.iterrows():
     to = r["Plan Lead Factory"]
     vol = r["lead_vol"]
 
-    if fr in coords_today and to in coords_lead:
-        lat_today = coords_today[fr]["Lat_today"]
-        lon_today = coords_today[fr]["Lon_today"]
-        lat_lead = coords_lead[to]["Lat_lead"]
-        lon_lead = coords_lead[to]["Lon_lead"]
-
-        
-# Lookup volumes
-        main_vol = main_by_factory.loc[main_by_factory["Factory today"] == fr, "main_vol"].values[0] \
-            if fr in main_by_factory["Factory today"].values else None
-        lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"] == to, "lead_vol"].values[0] \
-            if to in lead_by_factory["Plan Lead Factory"].values else None
-
-
-        
-        main_vol_txt = f"{main_vol:,.0f}" if pd.notnull(main_vol) else "n/a"
-        lead_vol_txt = f"{lead_vol:,.0f}" if pd.notnull(lead_vol) else "n/a"
-
-        
-        tooltip_html = (
-            f"{fr} → {to}<br>"
-            f"Lead Vol: {lead_vol_txt}"
-             )
+     vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
+        tooltip_html = f"{fr} → {to}<br>Volume: {vol_txt}"
         popup_html = (
-            f"<b>From:</b> {fr} → <b>To:</b> {to}<br>"
-            f"<b>Lead Volume:</b> {lead_vol_txt}"
-            )
-
+            f"<b>Lead:</b> {fr} → <b>Sub:</b> {to}"
+            f"<br><b>Volume:</b> {vol_txt}"
+      
         path = AntPath(
             locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
             color="#0052a0",
@@ -787,6 +765,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
