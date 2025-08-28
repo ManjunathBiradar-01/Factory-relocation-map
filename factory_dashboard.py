@@ -395,7 +395,7 @@ for _, r in routes.iterrows():
 
         path = AntPath(
             locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-            color="0052a0",
+            color="#0052a0",
             weight=5,
             opacity=0.9,
             dash_array=[10, 20],
@@ -635,7 +635,7 @@ for _, r in routes.iterrows():
 
         path = AntPath(
             locations=[[lat_lead, lon_lead], [lat_sub, lon_sub]],
-            color="ffdc43",
+            color="#ffdc43",
             weight=5,
             opacity=0.9,
             dash_array=[10, 20],
@@ -740,6 +740,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
