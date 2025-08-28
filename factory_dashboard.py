@@ -605,16 +605,16 @@ else:
     region_lead = pd.Series(dtype="object")
     region_sub = pd.Series(dtype="object")
 
-# === 3) 'Today' factory markers once each (aggregated main_vol) ===
-for _, r in main_by_factory.iterrows():
-    f = r["Factory today"]
+# === 3) 'Sub' factory markers once each (aggregated main_vol) ===
+for _, r in sub_by_factory.iterrows():
+    f = r["Plan Sub Factory"]
     if f in coords_today:
-        lat_today = coords_today[f]["Lat_today"]
-        lon_today = coords_today[f]["Lon_today"]
-        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
-        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
+        lat_sub = coords_today[f]["Lat_sub"]
+        lon_sub = coords_today[f]["Lon_sub"]
+        vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
+        sr = (region_sub[f] if sales_region_col and f in region_sub.index else "n/a")
 
-        tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
+        tooltip = f"{f} | Sub Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
         popup = (
             f"<b>Factory:</b> {f}"
             f"<br><b>Main Volume:</b> {vol_txt}"
@@ -623,7 +623,7 @@ for _, r in main_by_factory.iterrows():
         )
 
         folium.Marker(
-            [lat_today, lon_today],
+            [lat_sub, lon_sub],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
@@ -642,7 +642,7 @@ for _, r in lead_by_factory.iterrows():
         popup = (
             f"<b>Lead Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {vol_txt}"
-            f"<br><b>Main Volume:</b> {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else ""
+            f"<br><b>Main Volume:</b> {sub_by_factory.loc[sub_by_factory['Plan Sub Factory'] == f, 'sub_vol'].sum():,.0f}" if f in sub_by_factory["Plan Sub Factory"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -775,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
