@@ -238,6 +238,21 @@ import numpy as np
 from folium.plugins import AntPath
 from folium import JavascriptLink, Element
 
+
+
+# === 0) Map Style Selector ===
+tile_options = {
+    "OpenStreetMap": "OpenStreetMap",
+    "Stamen Terrain": "Stamen Terrain",
+    "Stamen Toner": "Stamen Toner",
+    "Stamen Watercolor": "Stamen Watercolor",
+    "CartoDB Positron": "CartoDB positron",
+    "CartoDB Dark Matter": "CartoDB dark_matter"
+}
+selected_tile = st.selectbox("Choose Map Style", list(tile_options.keys()))
+
+
+
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
 
@@ -260,7 +275,7 @@ if not filtered_df.empty:
 center_lat = float(np.mean([c[0] for c in coords])) if coords else 20.0
 center_lon = float(np.mean([c[1] for c in coords])) if coords else 0.0
 
-m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
+m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles=tile_options[selected_tile])
 
 # Load Leaflet arrowheads plugin
 m.get_root().header.add_child(JavascriptLink(
@@ -760,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
