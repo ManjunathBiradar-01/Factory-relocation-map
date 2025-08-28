@@ -156,6 +156,19 @@ with st.sidebar:
         sales_region_filter = []
 
 
+# === 0) Map Style Selector ===
+with st.sidebar:
+    tile_options = {
+    "OpenStreetMap": "OpenStreetMap",
+    "Stamen Terrain": "Stamen Terrain",
+    "Stamen Toner": "Stamen Toner",
+    "Stamen Watercolor": "Stamen Watercolor",
+    "CartoDB Positron": "CartoDB positron",
+    "CartoDB Dark Matter": "CartoDB dark_matter"
+}
+selected_tile = st.selectbox("Choose Map Style", list(tile_options.keys()))
+
+
 
 # ---------- UI (updated) ----------
 st.title("Factory Production Relocation Dashboard")
@@ -237,20 +250,6 @@ import pandas as pd
 import numpy as np
 from folium.plugins import AntPath
 from folium import JavascriptLink, Element
-
-
-
-# === 0) Map Style Selector ===
-tile_options = {
-    "OpenStreetMap": "OpenStreetMap",
-    "Stamen Terrain": "Stamen Terrain",
-    "Stamen Toner": "Stamen Toner",
-    "Stamen Watercolor": "Stamen Watercolor",
-    "CartoDB Positron": "CartoDB positron",
-    "CartoDB Dark Matter": "CartoDB dark_matter"
-}
-selected_tile = st.selectbox("Choose Map Style", list(tile_options.keys()))
-
 
 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
@@ -775,6 +774,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
