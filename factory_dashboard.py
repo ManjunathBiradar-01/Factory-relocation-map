@@ -229,7 +229,7 @@ m.get_root().header.add_child(JavascriptLink(
     "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
 ))
 
-# Custom CSS for better styling
+# Custom CSS for better styling  (✅ use real <style> tags, not escaped)
 FONT_SIZE_PX = 16
 css = f"""
 <style>
@@ -256,20 +256,6 @@ css = f"""
 """
 m.get_root().header.add_child(Element(css))
 
-# Normalize names and coerce volumes
-filtered_df = filtered_df.copy()
-
-for col in ["Factory today", "Plan Lead Factory"]:
-    filtered_df[col] = (
-        filtered_df[col]
-        .astype(str)
-        .str.strip()
-    )
-
-for vol_col in ["lead_vol", "main_vol"]:
-    if vol_col in filtered_df.columns:
-        filtered_df[vol_col] = pd.to_numeric(filtered_df[vol_col], errors="coerce")
-
 # === 1) Build unique coordinates per factory ===
 coords_today = (
     filtered_df.dropna(subset=["Factory today", "Lat_today", "Lon_today"])
@@ -286,14 +272,12 @@ coords_lead = (
 )
 
 # === 2) Aggregate volumes ===
-# Sum lines by route (Factory today -> Plan Lead Factory)
 routes = (
     filtered_df.dropna(subset=["Factory today", "Plan Lead Factory"])
     .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["lead_vol"]
     .sum()
 )
 
-# Sum marker volumes per factory
 main_by_factory = (
     filtered_df.dropna(subset=["Factory today"])
     .groupby("Factory today", as_index=False)["main_vol"]
@@ -306,7 +290,7 @@ lead_by_factory = (
     .sum()
 )
 
-# (Optional) If you want Sales Region per factory in popups, compute a representative (mode)
+# (Optional) representative Sales Region (mode)
 if sales_region_col:
     region_today = (
         filtered_df.dropna(subset=["Factory today"])
@@ -318,46 +302,48 @@ if sales_region_col:
         .groupby("Plan Lead Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
+else:
+    # safe defaults so we can reference below
+    region_today = pd.Series(dtype="object")
+    region_lead = pd.Series(dtype="object")
 
-# === 3) Add 'today' factory markers once each (aggregated main_vol) ===
+# === 3) 'Today' factory markers once each (aggregated main_vol) ===
 for _, r in main_by_factory.iterrows():
     f = r["Factory today"]
     if f in coords_today:
         lat_today = coords_today[f]["Lat_today"]
         lon_today = coords_today[f]["Lon_today"]
         vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
-        # optional sales region
-        sr = region_today[f] if sales_region_col and f in region_today.index else "n/a"
+        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
 
         tooltip = f"{f} | Main Vol: {vol_txt}"
         popup = (
-            f"&lt;b&gt;Factory:&lt;/b&gt; {f}"
-            f"&lt;br&gt;&lt;b&gt;Main Volume:&lt;/b&gt; {vol_txt}"
-            + (f"&lt;br&gt;&lt;b&gt;Sales Region:&lt;/b&gt; {sr}" if sales_region_col else "")
+            f"<b>Factory:</b> {f}"
+            f"<br><b>Main Volume:</b> {vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
         folium.Marker(
             [lat_today, lon_today],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
         ).add_to(m)
 
-# === 4) Add 'lead' factory markers once each (aggregated lead_vol) ===
+# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
 for _, r in lead_by_factory.iterrows():
     f = r["Plan Lead Factory"]
     if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
         vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
-        # optional sales region
-        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
+        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
         tooltip = f"{f} | Lead Vol: {vol_txt}"
         popup = (
-            f"&lt;b&gt;Lead Factory:&lt;/b&gt; {f}"
-            f"&lt;br&gt;&lt;b&gt;Lead Volume:&lt;/b&gt; {vol_txt}"
-            + (f"&lt;br&gt;&lt;b&gt;Sales Region:&lt;/b&gt; {sr}" if sales_region_col else "")
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Lead Volume:</b> {vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
         folium.Marker(
@@ -381,10 +367,10 @@ for _, r in routes.iterrows():
         lon_lead = coords_lead[to]["Lon_lead"]
 
         vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
-        tooltip_html = f"{fr} → {to}&lt;br&gt;Volume: {vol_txt}"
+        tooltip_html = f"{fr} → {to}<br>Volume: {vol_txt}"
         popup_html = (
-            f"&lt;b&gt;From:&lt;/b&gt; {fr} → &lt;b&gt;To:&lt;/b&gt; {to}"
-            f"&lt;br&gt;&lt;b&gt;Volume:&lt;/b&gt; {vol_txt}"
+            f"<b>From:</b> {fr} → <b>To:</b> {to}"
+            f"<br><b>Volume:</b> {vol_txt}"
         )
 
         path = AntPath(
@@ -403,33 +389,42 @@ for _, r in routes.iterrows():
         folium.Popup(popup_html, max_width=320).add_to(path)
         path.add_to(m)
 
-        # Arrowheads plugin
-        arrow_js = f"""
-        &lt;script&gt;
-        try {{
-            var lyr = {path.get_name()};
-            if (lyr &amp;&amp; typeof lyr.arrowheads === 'function') {{
-                lyr.arrowheads({{
-                    size: '16px',
-                    frequency: 'endonly',
-                    yawn: 45,
-                    fill: true,
-                    color: '#e63946'
-                }});
-            }}
-        }} catch (e) {{
-            console.warn('Arrowheads plugin failed:', e);
-        }}
-        &lt;/script&gt;
-        """
-        m.get_root().html.add_child(Element(arrow_js))
-
         bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+
+# === 5b) Apply arrowheads ONCE after all paths are on the map ===
+arrowheads_once_js = f"""
+<script>
+(function() {{
+  var map = {m.get_name()};
+  function applyArrowheads() {{
+    try {{
+      Object.values(map._layers || {{}}).forEach(function(layer) {{
+        if (layer && typeof layer.arrowheads === 'function') {{
+          layer.arrowheads({{
+            size: '16px',
+            frequency: 'endonly',
+            yawn: 45,
+            fill: true,
+            color: '#e63946'
+          }});
+        }}
+      }});
+    }} catch (e) {{
+      console.warn('Arrowheads plugin failed:', e);
+    }}
+  }}
+  map.whenReady(function() {{
+    applyArrowheads();
+    map.on('layeradd', applyArrowheads);
+  }});
+}})();
+</script>
+"""
+m.get_root().html.add_child(Element(arrowheads_once_js))
 
 # === 6) Fit map to all aggregated bounds ===
 if bounds:
     m.fit_bounds(bounds)
-
 # Render in Streamlit
 st.subheader("Production Relocation Map")
 st.components.v1.html(m._repr_html_(), height=600)
@@ -630,6 +625,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
