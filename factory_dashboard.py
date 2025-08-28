@@ -605,22 +605,20 @@ else:
     region_lead = pd.Series(dtype="object")
     region_sub = pd.Series(dtype="object")
 
-# === 3) Lead factory markers once each (aggregated main_vol) ===
+# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
 for _, r in lead_by_factory.iterrows():
     f = r["Plan Lead Factory"]
     if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
-        lead_vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
-        sub_vol_sum = sub_by_factory.loc[sub_by_factory["Plan Sub Factory"] == f, "sub_vol"].sum()
-        sub_vol_txt = f"{sub_vol_sum:,.0f}" if pd.notnull(sub_vol_sum) else "n/a"
-        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
+        vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
-        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
+        tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else "n/a"
         popup = (
-            f"<b>Lead Factory:</b> {f}<br>"
-            f"<b>Lead Volume:</b> {lead_vol_txt}<br>"
-            f"<b>Sub Volume:</b> {sub_vol_txt}"
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Lead Volume:</b> {vol_txt}"
+            f"<br><b>Main Volume:</b> {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -628,8 +626,8 @@ for _, r in lead_by_factory.iterrows():
             [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="orange", icon="cog", prefix="fa")
-        )
+            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+        ).add_to(m)
 
 # === 4) Sub factory markers once each (aggregated sub_vol) ===
 for _, r in sub_by_factory.iterrows():
@@ -776,6 +774,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
