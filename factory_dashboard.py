@@ -303,15 +303,15 @@ for _, row in filtered_df.iterrows():
           ).add_to(m)
 
     # Draw flow path with summed volume
-    if pd.notnull(lat_today) and pd.notnull(lon_today) and pd.notnull(lat_lead) and pd.notnull(lon_lead):
-        route_key = (factory_name, lead_factory_name)
-        total_volume = volume_lookup.get(route_key, None)
-        vol_txt = f"{total_volume:,.0f}" if total_volume is not None else "n/a"
+      if pd.notnull(lat_today) and pd.notnull(lon_today) and pd.notnull(lat_lead) and pd.notnull(lon_lead):
+          route_key = (factory_name, lead_factory_name)
+          total_volume = volume_lookup.get(route_key, None)
+          vol_txt = f"{total_volume:,.0f}" if total_volume is not None else "n/a"
        
-        tooltip_html = f"{factory_name} → {lead_factory_name}<br>Volume: {vol_txt}"
-        popup_html = f"<b>From:</b> {factory_name} → <b>To:</b> {lead_factory_name}<br><b>Volume:</b> {vol_txt}"
+          tooltip_html = f"{factory_name} → {lead_factory_name}<br>Volume: {vol_txt}"
+          popup_html = f"<b>From:</b> {factory_name} → <b>To:</b> {lead_factory_name}<br><b>Volume:</b> {vol_txt}"
 
-        path = AntPath(
+          path = AntPath(
             locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
             color="#e63946",
             weight=5,
@@ -553,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
