@@ -188,24 +188,31 @@ if sales_region_col and sales_region_filter:
     filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
 
- # Friendly coordinate strings (optional for table)
-    filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
-    filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
-    filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
+# === Additional KPIs ===
 
-    # KPIs
-    kc1, kc2, kc3, kc4 = st.columns(4)
-    with kc1:
-        st.metric("Unique FMs", filtered_df["FM"].nunique())
-    with kc2:
-        st.metric("Main Factories", filtered_df["Factory today"].nunique())
-    with kc3:
-        st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
-    with kc4:
-        st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
+# Overall volume shifts
+vol_from_to = filtered_df["lead_vol"].sum()
+vol_to_sub = filtered_df["sub_vol"].sum()
 
-    st.subheader("Volume Flow (From → Lead → Sub)")
+st.markdown("### Overall Volume Shifts")
+kpi1, kpi2 = st.columns(2)
+with kpi1:
+    st.metric("Volume: Main → Lead", f"{vol_from_to:,.0f}")
+with kpi2:
+    st.metric("Volume: Lead → Sub", f"{vol_to_sub:,.0f}")
 
+# Volume by factory type
+st.markdown("### Volume by Factory Type")
+kpi_main, kpi_lead, kpi_sub = st.columns(3)
+with kpi_main:
+    st.metric("Main Factories (Unique)", filtered_df["Factory today"].nunique())
+    st.metric("Main Volume (Total)", f"{filtered_df['main_vol'].sum():,.0f}")
+with kpi_lead:
+    st.metric("Lead Factories (Unique)", filtered_df["Plan Lead Factory"].nunique())
+    st.metric("Lead Volume (Total)", f"{filtered_df['lead_vol'].sum():,.0f}")
+with kpi_sub:
+    st.metric("Sub Factories (Unique)", filtered_df["Plan Sub Factory"].nunique())
+    st.metric("Sub Volume (Total)", f"{filtered_df['sub_vol'].sum():,.0f}")
 
 
 
@@ -716,6 +723,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
