@@ -364,7 +364,7 @@ for _, r in main_by_factory.iterrows():
         vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
         sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
 
-       tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
+        tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
         popup = (
             f"<b>Factory:</b> {f}"
             f"<br><b>Main Volume:</b> {vol_txt}"
@@ -788,6 +788,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
