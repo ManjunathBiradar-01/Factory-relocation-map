@@ -611,13 +611,16 @@ for _, r in lead_by_factory.iterrows():
     if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
-        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
-        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
+        lead_vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        sub_vol_sum = sub_by_factory.loc[sub_by_factory["Plan Sub Factory"] == f, "sub_vol"].sum()
+        sub_vol_txt = f"{sub_vol_sum:,.0f}" if pd.notnull(sub_vol_sum) else "n/a"
+        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
 
-        tooltip = f"{f} | Main Vol: {vol_txt}"
+        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
         popup = (
-            f"<b>Lead Factory:</b> {f}"
-            f"<br><b>Main Volume:</b> {vol_txt}"
+            f"<b>Lead Factory:</b> {f}<br>"
+            f"<b>Lead Volume:</b> {lead_vol_txt}<br>"
+            f"<b>Sub Volume:</b> {sub_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -625,8 +628,8 @@ for _, r in lead_by_factory.iterrows():
             [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")
-        ).add_to(m)
+            icon=folium.Icon(color="orange", icon="cog", prefix="fa")
+
 
 # === 4) Sub factory markers once each (aggregated sub_vol) ===
 for _, r in sub_by_factory.iterrows():
@@ -634,13 +637,13 @@ for _, r in sub_by_factory.iterrows():
     if f in coords_sub:
         lat_sub = coords_sub[f]["Lat_sub"]
         lon_sub = coords_sub[f]["Lon_sub"]
-        vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
-        sr = (region_sub[f] if sales_region_col and f in region_sub.index else "n/a")
+        sub_vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
+        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
 
-        tooltip = f"{f} | Sub Vol: {vol_txt}"
+        tooltip = f"{f} | Sub Vol: {sub_vol_txt}"
         popup = (
-            f"<b>Sub Factory:</b> {f}"
-            f"<br><b>Sub Volume:</b> {vol_txt}"
+            f"<b>Sub Factory:</b> {f}<br>"
+            f"<b>Sub Volume:</b> {sub_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -773,6 +776,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
