@@ -611,7 +611,8 @@ for _, r in lead_by_factory.iterrows():
     if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
-        vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        lead_vol_value = r.get("lead_vol", None)
+        vol_txt = f"{lead_vol_value:,.0f}" if pd.notnull(lead_vol_value) else "n/a"
         sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
         tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else "n/a"
@@ -774,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
