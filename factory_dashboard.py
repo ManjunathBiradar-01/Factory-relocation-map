@@ -431,11 +431,10 @@ for _, r in routes.iterrows():
         
         tooltip_html = (
             f"{fr} → {to}<br>"
-            f"Main Vol: {main_vol_txt} | Lead Vol: {lead_vol_txt}"
+            f"Lead Vol: {lead_vol_txt}"
              )
         popup_html = (
             f"<b>From:</b> {fr} → <b>To:</b> {to}<br>"
-            f"<b>Main Volume:</b> {main_vol_txt}<br>"
             f"<b>Lead Volume:</b> {lead_vol_txt}"
             )
 
@@ -788,6 +787,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
