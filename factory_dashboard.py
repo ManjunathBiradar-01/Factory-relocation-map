@@ -364,10 +364,11 @@ for _, r in main_by_factory.iterrows():
         vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
         sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
 
-        tooltip = f"{f} | Main Vol: {vol_txt}"
+       tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
         popup = (
             f"<b>Factory:</b> {f}"
             f"<br><b>Main Volume:</b> {vol_txt}"
+            f"<br><b>Lead Volume:</b> {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -387,10 +388,11 @@ for _, r in lead_by_factory.iterrows():
         vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
         sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
-        tooltip = f"{f} | Lead Vol: {vol_txt}"
+        tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else "n/a"
         popup = (
             f"<b>Lead Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {vol_txt}"
+            f"<br><b>Main Volume:</b> {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -786,6 +788,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
