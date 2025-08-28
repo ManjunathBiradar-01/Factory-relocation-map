@@ -536,7 +536,7 @@ else:
 
 # === 3) 'lead' factory markers once each (aggregated main_vol) ===
 for _, r in main_by_factory.iterrows():
-    f = r["Plan Sub Factory"]
+    f = r["Plan Lead Factory"]
     if f in coords_today:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
@@ -689,6 +689,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
