@@ -410,29 +410,37 @@ for _, r in routes.iterrows():
     to = r["Plan Lead Factory"]
     vol = r["lead_vol"]
 
-    vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
-    tooltip_html = f"{fr} → {to}<br>Volume: {vol_txt}"
-    popup_html = (
-            f"<b>Lead:</b> {fr} → <b>Sub:</b> {to}"
-            f"<br><b>Volume:</b> {vol_txt}"
-            )
-    path = AntPath(
-        locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-        color="#0052a0",
-        weight=5,
-        opacity=0.9,
-        dash_array=[10, 20],
-        delay=800,
-        pulse_color="#ffdc43",
-        paused=False,
-        reverse=False,
-        hardware_accelerated=True
-    )
-    folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-    folium.Popup(popup_html, max_width=320).add_to(path)
-    path.add_to(m)
+    if fr in coords_today and to in coords_lead:
+        lat_today = coords_today[fr]["Lat_today"]
+        lon_today = coords_today[fr]["Lon_today"]
+        lat_lead = coords_lead[to]["Lat_lead"]
+        lon_lead = coords_lead[to]["Lon_lead"]
 
-    bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+        lead_vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
+
+        tooltip_html = f"{fr} → {to}<br>Lead Volume: {lead_vol_txt}"
+        popup_html = (
+            f"<b>From:</b> {fr} → <b>To:</b> {to}<br>"
+            f"<b>Lead Volume:</b> {lead_vol_txt}"
+        )
+
+        path = AntPath(
+            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
+            color="#0052a0",
+            weight=5,
+            opacity=0.9,
+            dash_array=[10, 20],
+            delay=800,
+            pulse_color="#ffdc43",
+            paused=False,
+            reverse=False,
+            hardware_accelerated=True
+        )
+        folium.Tooltip(tooltip_html, sticky=True).add_to(path)
+        folium.Popup(popup_html, max_width=320).add_to(path)
+        path.add_to(m)
+
+        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
 
 # === 5b) Apply arrowheads ONCE after all paths are on the map ===
 arrowheads_once_js = f"""
@@ -765,6 +773,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
