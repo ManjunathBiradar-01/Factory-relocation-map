@@ -188,6 +188,27 @@ if sales_region_col and sales_region_filter:
     filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
 
+ # Friendly coordinate strings (optional for table)
+    filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
+    filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
+    filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
+
+    # KPIs
+    kc1, kc2, kc3, kc4 = st.columns(4)
+    with kc1:
+        st.metric("Unique FMs", filtered_df["FM"].nunique())
+    with kc2:
+        st.metric("Main Factories", filtered_df["Factory today"].nunique())
+    with kc3:
+        st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
+    with kc4:
+        st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
+
+    st.subheader("Volume Flow (From → Lead → Sub)")
+
+
+
+
 import folium
 import pandas as pd
 import numpy as np
@@ -695,6 +716,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
