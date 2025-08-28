@@ -323,31 +323,31 @@ for _, row in filtered_df.iterrows():
             reverse=False,
             hardware_accelerated=True
         )
-        folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-        folium.Popup(popup_html, max_width=320).add_to(path)
-        path.add_to(m)
+          folium.Tooltip(tooltip_html, sticky=True).add_to(path)
+          folium.Popup(popup_html, max_width=320).add_to(path)
+         path.add_to(m)
 
         # Add arrowheads
-        arrow_js = f"""
-        <script>
-        try {{
-            var lyr = {path.get_name()};
-            if (lyr && typeof lyr.arrowheads === 'function') {{
+          arrow_js = f"""
+          <script>
+          try {{
+              var lyr = {path.get_name()};
+              if (lyr && typeof lyr.arrowheads === 'function') {{
                 lyr.arrowheads({{
-                    size: '16px',
-                    frequency: 'endonly',
-                    yawn: 45,
-                    fill: true,
-                    color: '#e63946'
-                }});
-            }}
-        }} catch (e) {{
-            console.warn('Arrowheads plugin failed:', e);
-        }}
-        </script>
-        """
-        m.get_root().html.add_child(Element(arrow_js))
-        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+                      size: '16px',
+                      frequency: 'endonly',
+                      yawn: 45,
+                      fill: true,
+                     color: '#e63946'
+                  }});
+              }}
+          }} catch (e) {{
+              console.warn('Arrowheads plugin failed:', e);
+          }}
+          </script>
+          """
+          m.get_root().html.add_child(Element(arrow_js))
+          bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
 
 # Fit map to bounds
 if bounds:
@@ -553,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
