@@ -204,16 +204,21 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Overall volume shifts
-vol_from_to = filtered_df["lead_vol"].sum()
-vol_to_sub = filtered_df["sub_vol"].sum()
+# You can make this dynamic using a dropdown if needed
+South Carolina, USA = "South Carolina, USA"  
+Boppard, Germany = "Boppard, Germany"
+Changzhou, China = "Changzhou, China"
+Pune, India = "Pune, India"
 
-st.markdown("### Overall Volume Shifts")
-kpi1, kpi2 = st.columns(2)
-with kpi1:
-    st.metric("Volume: Main → Lead", f"{vol_from_to:,.0f}")
-with kpi2:
-    st.metric("Volume: Lead → Sub", f"{vol_to_sub:,.0f}")
+with kpi_main:
+    st.metric("Main Factories (Unique)", filtered_df["Factory today"].nunique())
+    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == Boppard, Germany]["main_vol"].sum()
+    filtered_main_vol2 = filtered_df[filtered_df["Factory today"] == Changzhou, China]["main_vol"].sum()
+    filtered_main_vol3 = filtered_df[filtered_df["Factory today"] == Pune, India]["main_vol"].sum()
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol1:,.0f}")
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol2:,.0f}")
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol3:,.0f}")
+
 
 # Volume by factory type
 st.markdown("### Volume by Factory Type")
@@ -757,6 +762,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
