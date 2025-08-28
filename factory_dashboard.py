@@ -187,6 +187,26 @@ filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_s
 
 # === Additional KPIs ===
 
+
+st.markdown("""
+    <style>
+    div[data-testid="metric"] > label {
+        font-family: 'Arial';
+        font-size: 18px;
+        font-weight: bold;
+        color: #34495e;
+    }
+    div[data-testid="metric"] > div {
+        font-family: 'Courier New';
+        font-size: 22px;
+        font-weight: 600;
+        color: #e67e22;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
 # Overall volume shifts
 vol_from_to = filtered_df["lead_vol"].sum()
 vol_to_sub = filtered_df["sub_vol"].sum()
@@ -740,6 +760,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
