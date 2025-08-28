@@ -325,7 +325,7 @@ for _, row in filtered_df.iterrows():
         )
           folium.Tooltip(tooltip_html, sticky=True).add_to(path)
           folium.Popup(popup_html, max_width=320).add_to(path)
-         path.add_to(m)
+          path.add_to(m)
 
         # Add arrowheads
           arrow_js = f"""
@@ -553,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
