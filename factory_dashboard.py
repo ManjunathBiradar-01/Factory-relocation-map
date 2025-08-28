@@ -161,46 +161,6 @@ st.title("Factory Production Relocation Dashboard")
 # Detect sales region column dynamically
 sales_region_col = find_sales_region_col(df.columns)
 
-# Row 1: Machine Code, Machine Name, Engine, Emission
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    machine_code_filter = st.multiselect(
-        "Machine Code (FM)",
-        options=sorted(df["FM"].dropna().astype(str).unique().tolist())
-    )
-with c2:
-    machine_name_filter = st.multiselect(
-        "Machine Name",
-        options=sorted(df["Name"].dropna().astype(str).unique().tolist())
-    )
-with c3:
-    engine_filter = st.multiselect(
-        "Select Engine Type",
-        options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
-    )
-with c4:
-    emission_filter = st.multiselect(
-        "Select Emission Level",
-        options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
-    )
-
-# Row 2: Sales Region (if column found)
-if sales_region_col:
-    (c5,) = st.columns(1)
-    with c5:
-        sales_region_filter = st.multiselect(
-            "Sales Region",
-            options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
-        )
-else:
-    sales_region_filter = []
-    st.info(
-        "Sales Region column not found. Looking for variations like "
-        "'Sales Region', 'Main Sales Region', 'MainSales Region', or 'SalesRegion'."
-    )
-
-
-
 # ---------- Apply filters (updated) ----------
 filtered_df = df.copy()
 
@@ -780,6 +740,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
