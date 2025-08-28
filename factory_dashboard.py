@@ -424,62 +424,6 @@ st.subheader("Manin Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
 
 
-# === KPI: Sub Volume per Sub Factory (based on df_pos and sub_by_factory) ===
-st.subheader("KPI — Sub Volume by Sub Factory")
-
-# Ensure we have the expected columns (safety)
-if "Plan Sub Factory" not in sub_by_factory.columns or "sub_vol" not in sub_by_factory.columns:
-    st.warning("Sub-factory aggregation not found. Please ensure 'sub_by_factory' groups 'Plan Sub Factory' → sum of 'sub_vol'.")
-else:
-    # Sort by sub_vol descending for display
-    sub_kpi = sub_by_factory.sort_values("sub_vol", ascending=False).reset_index(drop=True)
-
-    # Headline metrics
-    total_sub_vol = float(sub_kpi["sub_vol"].sum()) if not sub_kpi.empty else 0.0
-    total_sub_factories = int(sub_kpi["Plan Sub Factory"].nunique()) if not sub_kpi.empty else 0
-    total_routes = int(routes.shape[0]) if "routes" in locals() else 0
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Sub Volume (all Sub Factories)", f"{total_sub_vol:,.0f}")
-    c2.metric("Unique Sub Factories (connected)", f"{total_sub_factories:,}")
-    c3.metric("Total Lead → Sub Routes", f"{total_routes:,}")
-
-    st.markdown("---")
-
-    # Top N Sub factories as KPI cards
-    TOP_N = 6
-    top = sub_kpi.head(TOP_N)
-    cols = st.columns(len(top) if len(top) > 0 else 1)
-    for col, (_, row) in zip(cols, top.iterrows()):
-        name = row["Plan Sub Factory"]
-        vol = row["sub_vol"]
-        col.metric(label=f"Sub: {name}", value=f"{vol:,.0f}")
-
-    # Bar chart (top 15)
-    st.markdown("#### Top Sub Factories by Sub Volume")
-    top_chart = sub_kpi.head(15).set_index("Plan Sub Factory")["sub_vol"]
-    st.bar_chart(top_chart)
-
-    # Download all Sub-factory totals
-    st.download_button(
-        label="Download Sub Volume per Sub Factory (CSV)",
-        data=sub_kpi.to_csv(index=False),
-        file_name="sub_volume_per_sub_factory.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
-
-    # Full table (expandable)
-    with st.expander("Show full Sub Volume table"):
-        st.dataframe(
-            sub_kpi.style.format({"sub_vol": "{:,.0f}"}),
-            use_container_width=True
-        )
-
-st.markdown("---")
-
-
-
 #2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
@@ -751,6 +695,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
