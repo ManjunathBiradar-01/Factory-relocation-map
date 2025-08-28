@@ -356,19 +356,25 @@ else:
     region_lead = pd.Series(dtype="object")
 
 # === 3) 'Today' factory markers once each (aggregated main_vol) ===
+lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
+
 for _, r in main_by_factory.iterrows():
-    f = r["Factory today"]
+    f = str(r["Factory today"]).strip()
     if f in coords_today:
         lat_today = coords_today[f]["Lat_today"]
         lon_today = coords_today[f]["Lon_today"]
         vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
-        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
+        sr = region_today[f] if sales_region_col and f in region_today.index else "n/a"
 
-        tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else "n/a"
+        # Check for matching lead factory
+        lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(), "lead_vol"].sum()
+        lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
+
+        tooltip = f"{f} | Main Vol: {vol_txt} | Lead Vol: {lead_vol_txt}"
         popup = (
             f"<b>Factory:</b> {f}"
             f"<br><b>Main Volume:</b> {vol_txt}"
-            f"<br><b>Lead Volume:</b> {lead_by_factory.loc[lead_by_factory['Plan Lead Factory'] == f, 'lead_vol'].sum():,.0f}" if f in lead_by_factory["Plan Lead Factory"].values else ""
+            f"<br><b>Lead Volume:</b> {lead_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -376,23 +382,29 @@ for _, r in main_by_factory.iterrows():
             [lat_today, lon_today],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")
         ).add_to(m)
 
 # === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
+main_factories_clean = main_by_factory["Factory today"].astype(str).str.strip().str.lower()
+
 for _, r in lead_by_factory.iterrows():
-    f = r["Plan Lead Factory"]
+    f = str(r["Plan Lead Factory"]).strip()
     if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
         vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
-        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
+        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
 
-        tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else "n/a"
+        # Check for matching main factory
+        main_vol = main_by_factory.loc[main_by_factory["Factory today"].astype(str).str.strip().str.lower() == f.lower(), "main_vol"].sum()
+        main_vol_txt = f"{main_vol:,.0f}" if main_vol > 0 else "n/a"
+
+        tooltip = f"{f} | Lead Vol: {vol_txt} | Main Vol: {main_vol_txt}"
         popup = (
             f"<b>Lead Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {vol_txt}"
-            f"<br><b>Main Volume:</b> {main_by_factory.loc[main_by_factory['Factory today'] == f, 'main_vol'].sum():,.0f}" if f in main_by_factory["Factory today"].values else ""
+            f"<br><b>Main Volume:</b> {main_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -402,7 +414,6 @@ for _, r in lead_by_factory.iterrows():
             popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
-
 # === 5) Draw each route once with summed lead_vol ===
 bounds = []
 for _, r in routes.iterrows():
@@ -785,6 +796,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
