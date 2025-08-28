@@ -609,8 +609,8 @@ else:
 for _, r in sub_by_factory.iterrows():
     f = r["Plan Sub Factory"]
     if f in coords_today:
-        lat_sub = coords_today[f]["Lat_sub"]
-        lon_sub = coords_today[f]["Lon_sub"]
+        lat_sub = coords_sub[f]["Lat_sub"]
+        lon_sub = coords_sub[f]["Lon_sub"]
         vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
         sr = (region_sub[f] if sales_region_col and f in region_sub.index else "n/a")
 
@@ -775,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
