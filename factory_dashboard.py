@@ -99,32 +99,6 @@ else:
         st.stop()
 
 
-with st.sidebar:
-    machine_code_filter = st.multiselect(
-        "Machine Code (FM)",
-        options=sorted(df["FM"].astype(str).dropna().unique())
-    )
-    machine_name_filter = st.multiselect(
-        "Machine Name",
-        options=sorted(df["Name"].astype(str).dropna().unique())
-    )
-    engine_filter = st.multiselect(
-        "Select Engine Type",
-        options=sorted(df["Engine"].astype(str).dropna().unique())
-    )
-    emission_filter = st.multiselect(
-        "Select Emission Level",
-        options=sorted(df["Emission"].astype(str).dropna().unique())
-    )
-    sales_region_col = find_sales_region_col(df.columns)
-    if sales_region_col:
-        sales_region_filter = st.multiselect(
-            "Sales Region",
-            options=sorted(df[sales_region_col].astype(str).dropna().unique())
-        )
-    else:
-        sales_region_filter = []
-
 
 
 # ---------- Data loader ----------
@@ -197,6 +171,36 @@ else:
         "Sales Region column not found. Looking for variations like "
         "'Sales Region', 'Main Sales Region', 'MainSales Region', or 'SalesRegion'."
     )
+
+
+with st.sidebar:
+    machine_code_filter = st.multiselect(
+        "Machine Code (FM)",
+        options=sorted(df["FM"].astype(str).dropna().unique())
+    )
+    machine_name_filter = st.multiselect(
+        "Machine Name",
+        options=sorted(df["Name"].astype(str).dropna().unique())
+    )
+    engine_filter = st.multiselect(
+        "Select Engine Type",
+        options=sorted(df["Engine"].astype(str).dropna().unique())
+    )
+    emission_filter = st.multiselect(
+        "Select Emission Level",
+        options=sorted(df["Emission"].astype(str).dropna().unique())
+    )
+    sales_region_col = find_sales_region_col(df.columns)
+    if sales_region_col:
+        sales_region_filter = st.multiselect(
+            "Sales Region",
+            options=sorted(df[sales_region_col].astype(str).dropna().unique())
+        )
+    else:
+        sales_region_filter = []
+
+
+
 
 # ---------- Apply filters (updated) ----------
 filtered_df = df.copy()
@@ -767,6 +771,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
