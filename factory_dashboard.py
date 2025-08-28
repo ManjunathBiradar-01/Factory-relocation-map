@@ -400,7 +400,7 @@ for _, r in routes.iterrows():
             opacity=0.9,
             dash_array=[10, 20],
             delay=800,
-            pulse_color="#ffd166",
+            pulse_color="#ffdc43",
             paused=False,
             reverse=False,
             hardware_accelerated=True
@@ -446,7 +446,7 @@ m.get_root().html.add_child(Element(arrowheads_once_js))
 if bounds:
     m.fit_bounds(bounds)
 # Render in Streamlit
-st.subheader("Manin Factory To Sub Factory")
+st.subheader("Main Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
 
 
@@ -640,7 +640,7 @@ for _, r in routes.iterrows():
             opacity=0.9,
             dash_array=[10, 20],
             delay=800,
-            pulse_color="#ffd166",
+            pulse_color="#0052a0",
             paused=False,
             reverse=False,
             hardware_accelerated=True
@@ -740,6 +740,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
