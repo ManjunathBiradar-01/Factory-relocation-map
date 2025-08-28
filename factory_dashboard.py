@@ -481,10 +481,33 @@ st.subheader("Main Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=400)
 
 
-# Lead Factories
+# === Volume by Each Factory ===
+st.markdown("### Volume by Each Factory")
+
+# Assuming filtered_df is already defined and contains the necessary columns
+
+# Summarize volumes by factory type
 lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
-st.markdown("#### Lead Factories")
-st.dataframe(lead_summary)
+sub_summary = filtered_df.groupby("Plan Sub Factory")["sub_vol"].sum().reset_index()
+main_summary = filtered_df.groupby("Factory today")["main_vol"].sum().reset_index()
+
+# Rename columns to a common key for merging
+lead_summary = lead_summary.rename(columns={"Plan Lead Factory": "Factory"})
+sub_summary = sub_summary.rename(columns={"Plan Sub Factory": "Factory"})
+main_summary = main_summary.rename(columns={"Factory today": "Factory"})
+
+# Merge all summaries on 'Factory'
+merged_df = pd.merge(main_summary, lead_summary, on="Factory", how="outer")
+merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
+
+# Fill missing values with 0 and convert to integers
+merged_df = merged_df.fillna(0)
+merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
+
+# Display the final merged table
+st.markdown("### Combined Factory Summary")
+st.dataframe(merged_df)
+
 
 
 
@@ -732,47 +755,6 @@ st.subheader("Lead Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=400)
 
 
-# === Volume by Each Factory ===
-st.markdown("### Volume by Each Factory")
-
-# Sub Factories
-sub_summary = filtered_df.groupby("Plan Sub Factory")["sub_vol"].sum().reset_index()
-st.markdown("#### Sub Factories")
-st.dataframe(sub_summary)
-
-# Main Factories
-main_summary = filtered_df.groupby("Factory today")["main_vol"].sum().reset_index()
-st.markdown("#### Main Factories")
-st.dataframe(main_summary)
-
-
-import streamlit as st
-import pandas as pd
-
-# Assuming filtered_df is already defined and contains the necessary columns
-
-# Summarize volumes by factory type
-lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
-sub_summary = filtered_df.groupby("Plan Sub Factory")["sub_vol"].sum().reset_index()
-main_summary = filtered_df.groupby("Factory today")["main_vol"].sum().reset_index()
-
-# Rename columns to a common key for merging
-lead_summary = lead_summary.rename(columns={"Plan Lead Factory": "Factory"})
-sub_summary = sub_summary.rename(columns={"Plan Sub Factory": "Factory"})
-main_summary = main_summary.rename(columns={"Factory today": "Factory"})
-
-# Merge all summaries on 'Factory'
-merged_df = pd.merge(main_summary, lead_summary, on="Factory", how="outer")
-merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
-
-# Fill missing values with 0 and convert to integers
-merged_df = merged_df.fillna(0)
-merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
-
-# Display the final merged table
-st.markdown("### Combined Factory Summary")
-st.dataframe(merged_df)
-
 
 # Add location columns to the table view
 filtered_df = filtered_df.copy()
@@ -803,6 +785,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
