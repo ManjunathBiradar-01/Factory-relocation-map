@@ -200,22 +200,6 @@ with st.sidebar:
         sales_region_filter = []
 
 
-
-
-# ---------- Apply filters (updated) ----------
-filtered_df = df.copy()
-
-if machine_code_filter:
-    filtered_df = filtered_df[filtered_df["FM"].astype(str).isin(machine_code_filter)]
-if machine_name_filter:
-    filtered_df = filtered_df[filtered_df["Name"].astype(str).isin(machine_name_filter)]
-if engine_filter:
-    filtered_df = filtered_df[filtered_df["Engine"].astype(str).isin(engine_filter)]
-if emission_filter:
-    filtered_df = filtered_df[filtered_df["Emission"].astype(str).isin(emission_filter)]
-if sales_region_col and sales_region_filter:
-    filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
-
 # === Additional KPIs ===
 
 # Overall volume shifts
@@ -771,6 +755,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
