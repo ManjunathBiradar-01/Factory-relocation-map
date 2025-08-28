@@ -194,9 +194,235 @@ import numpy as np
 from folium.plugins import AntPath
 from folium import JavascriptLink, Element
 
-import folium
-from folium.plugins import AntPath
-from folium import JavascriptLink, Element
+# === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
+filtered_df = filtered_df.copy()
+
+# Ensure names match between grouping and lookup (strip whitespace)
+for col in ["Factory today", "Plan Lead Factory"]:
+    if col in filtered_df.columns:
+        filtered_df[col] = filtered_df[col].astype(str).str.strip()
+
+# Coerce volume columns to numeric
+for vcol in ["lead_vol", "main_vol"]:
+    if vcol in filtered_df.columns:
+        filtered_df[vcol] = pd.to_numeric(filtered_df[vcol], errors="coerce")
+
+# Center map based on available coordinates
+coords = []
+if not filtered_df.empty:
+    coords.extend(filtered_df[["Lat_today", "Lon_today"]].dropna().values.tolist())
+    coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
+
+center_lat = float(np.mean([c[0] for c in coords])) if coords else 20.0
+center_lon = float(np.mean([c[1] for c in coords])) if coords else 0.0
+
+m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
+
+# Load Leaflet arrowheads plugin
+m.get_root().header.add_child(JavascriptLink(
+    "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
+))
+
+# Custom CSS for better styling  (✅ use real <style> tags, not escaped)
+FONT_SIZE_PX = 16
+css = f"""
+<style>
+.leaflet-tooltip {{
+    font-size: {FONT_SIZE_PX}px;
+    font-weight: 600;
+    color: #111;
+}}
+.leaflet-popup-content {{
+    font-size: {FONT_SIZE_PX}px;
+    line-height: 1.35;
+    color: #111;
+}}
+.leaflet-popup-content-wrapper {{
+    padding: 8px 12px;
+}}
+@media (max-width: 768px) {{
+    .leaflet-tooltip,
+    .leaflet-popup-content {{
+        font-size: {FONT_SIZE_PX + 2}px;
+    }}
+}}
+</style>
+"""
+m.get_root().header.add_child(Element(css))
+
+# === 1) Build unique coordinates per factory ===
+coords_today = (
+    filtered_df.dropna(subset=["Factory today", "Lat_today", "Lon_today"])
+    .drop_duplicates("Factory today")
+    .set_index("Factory today")[["Lat_today", "Lon_today"]]
+    .to_dict("index")
+)
+
+coords_lead = (
+    filtered_df.dropna(subset=["Plan Lead Factory", "Lat_lead", "Lon_lead"])
+    .drop_duplicates("Plan Lead Factory")
+    .set_index("Plan Lead Factory")[["Lat_lead", "Lon_lead"]]
+    .to_dict("index")
+)
+
+# === 2) Aggregate volumes ===
+routes = (
+    filtered_df.dropna(subset=["Factory today", "Plan Lead Factory"])
+    .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["lead_vol"]
+    .sum()
+)
+
+main_by_factory = (
+    filtered_df.dropna(subset=["Factory today"])
+    .groupby("Factory today", as_index=False)["main_vol"]
+    .sum()
+)
+
+lead_by_factory = (
+    filtered_df.dropna(subset=["Plan Lead Factory"])
+    .groupby("Plan Lead Factory", as_index=False)["lead_vol"]
+    .sum()
+)
+
+# (Optional) representative Sales Region (mode)
+if sales_region_col:
+    region_today = (
+        filtered_df.dropna(subset=["Factory today"])
+        .groupby("Factory today")[sales_region_col]
+        .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
+    )
+    region_lead = (
+        filtered_df.dropna(subset=["Plan Lead Factory"])
+        .groupby("Plan Lead Factory")[sales_region_col]
+        .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
+    )
+else:
+    # safe defaults so we can reference below
+    region_today = pd.Series(dtype="object")
+    region_lead = pd.Series(dtype="object")
+
+# === 3) 'Today' factory markers once each (aggregated main_vol) ===
+for _, r in main_by_factory.iterrows():
+    f = r["Factory today"]
+    if f in coords_today:
+        lat_today = coords_today[f]["Lat_today"]
+        lon_today = coords_today[f]["Lon_today"]
+        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
+        sr = (region_today[f] if sales_region_col and f in region_today.index else "n/a")
+
+        tooltip = f"{f} | Main Vol: {vol_txt}"
+        popup = (
+            f"<b>Factory:</b> {f}"
+            f"<br><b>Main Volume:</b> {vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+        )
+
+        folium.Marker(
+            [lat_today, lon_today],
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
+        ).add_to(m)
+
+# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
+for _, r in lead_by_factory.iterrows():
+    f = r["Plan Lead Factory"]
+    if f in coords_lead:
+        lat_lead = coords_lead[f]["Lat_lead"]
+        lon_lead = coords_lead[f]["Lon_lead"]
+        vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
+
+        tooltip = f"{f} | Lead Vol: {vol_txt}"
+        popup = (
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Lead Volume:</b> {vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+        )
+
+        folium.Marker(
+            [lat_lead, lon_lead],
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
+            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+        ).add_to(m)
+
+# === 5) Draw each route once with summed lead_vol ===
+bounds = []
+for _, r in routes.iterrows():
+    fr = r["Factory today"]
+    to = r["Plan Lead Factory"]
+    vol = r["lead_vol"]
+
+    if fr in coords_today and to in coords_lead:
+        lat_today = coords_today[fr]["Lat_today"]
+        lon_today = coords_today[fr]["Lon_today"]
+        lat_lead = coords_lead[to]["Lat_lead"]
+        lon_lead = coords_lead[to]["Lon_lead"]
+
+        vol_txt = f"{vol:,.0f}" if pd.notnull(vol) else "n/a"
+        tooltip_html = f"{fr} → {to}<br>Volume: {vol_txt}"
+        popup_html = (
+            f"<b>From:</b> {fr} → <b>To:</b> {to}"
+            f"<br><b>Volume:</b> {vol_txt}"
+        )
+
+        path = AntPath(
+            locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
+            color="#e63946",
+            weight=5,
+            opacity=0.9,
+            dash_array=[10, 20],
+            delay=800,
+            pulse_color="#ffd166",
+            paused=False,
+            reverse=False,
+            hardware_accelerated=True
+        )
+        folium.Tooltip(tooltip_html, sticky=True).add_to(path)
+        folium.Popup(popup_html, max_width=320).add_to(path)
+        path.add_to(m)
+
+        bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
+
+# === 5b) Apply arrowheads ONCE after all paths are on the map ===
+arrowheads_once_js = f"""
+<script>
+(function() {{
+  var map = {m.get_name()};
+  function applyArrowheads() {{
+    try {{
+      Object.values(map._layers || {{}}).forEach(function(layer) {{
+        if (layer && typeof layer.arrowheads === 'function') {{
+          layer.arrowheads({{
+            size: '16px',
+            frequency: 'endonly',
+            yawn: 45,
+            fill: true,
+            color: '#e63946'
+          }});
+        }}
+      }});
+    }} catch (e) {{
+      console.warn('Arrowheads plugin failed:', e);
+    }}
+  }}
+  map.whenReady(function() {{
+    applyArrowheads();
+    map.on('layeradd', applyArrowheads);
+  }});
+}})();
+</script>
+"""
+m.get_root().html.add_child(Element(arrowheads_once_js))
+
+# === 6) Fit map to all aggregated bounds ===
+if bounds:
+    m.fit_bounds(bounds)
+# Render in Streamlit
+st.subheader("Production Relocation Map")
+st.components.v1.html(m._repr_html_(), height=600)
+
 
 
 
@@ -431,171 +657,6 @@ st.components.v1.html(m._repr_html_(), height=600)
 
 
 
-
-# ---------- Map centering ----------
-coords = []
-if not filtered_df.empty:
-    coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
-    coords.extend(filtered_df[["Lat_sub", "Lon_sub"]].dropna().values.tolist())
-
-if coords:
-    center_lat = float(np.mean([c[0] for c in coords]))
-    center_lon = float(np.mean([c[1] for c in coords]))
-else:
-    center_lat, center_lon = 20.0, 0.0  # global fallback
-
-m = folium.Map(location=[center_lat, center_lon], zoom_start=2, tiles="OpenStreetMap")
-
-# Load Leaflet arrowheads plugin
-m.get_root().header.add_child(JavascriptLink(
-    "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
-))
-
-# ---------- Custom CSS ----------
-FONT_SIZE_PX = 16
-css = f"""
-<style>
-  .leaflet-tooltip {{
-    font-size: {FONT_SIZE_PX}px;
-    font-weight: 600;
-    color: #111;
-  }}
-  .leaflet-popup-content {{
-    font-size: {FONT_SIZE_PX}px;
-    line-height: 1.35;
-    color: #111;
-  }}
-  .leaflet-popup-content-wrapper {{
-    padding: 8px 12px;
-  }}
-  @media (max-width: 768px) {{
-    .leaflet-tooltip,
-    .leaflet-popup-content {{
-      font-size: {FONT_SIZE_PX + 2}px;
-    }}
-  }}
-</style>
-"""
-m.get_root().header.add_child(Element(css))
-
-# ---------- Group volume by route ----------
-grouped = filtered_df.groupby(["Plan Sub Factory", "Plan Lead Factory"])["sub_vol"].sum().reset_index()
-grouped = grouped[grouped["sub_vol"] > 0]  # ✅ Only keep routes with volume > 0
-volume_lookup = {
-    (row["Plan Sub Factory"], row["Plan Lead Factory"]): row["sub_vol"]
-    for _, row in grouped.iterrows()
-}
-
-# ---------- Plot markers & flows ----------
-bounds = []
-
-for _, row in filtered_df.iterrows():
-    lat_sub, lon_sub = row["Lat_sub"], row["Lon_sub"]
-    lat_lead,  lon_lead  = row["Lat_lead"],  row["Lon_lead"]
-
-    sales_region_line = ""
-    if sales_region_col and pd.notnull(row.get(sales_region_col, None)):
-        sales_region_line = f"<br><b>Sales Region:</b> {row.get(sales_region_col, '')}"
-
-    if pd.notnull(lat_today) and pd.notnull(lon_today):
-        folium.Marker(
-            [lat_lead, lon_lead],
-            popup=folium.Popup(
-                f"<b></b> {row.get('plan lead factory','')}",
-                max_width=320
-            ),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa"),
-            tooltip="Factory Today"
-        ).add_to(m)
-
-    if pd.notnull(lat_sub) and pd.notnull(lon_sub):
-        folium.Marker(
-            [lat_sub, lon_sub],
-            popup=folium.Popup(
-                f"<b></b> {row.get('Plan sub Factory','')}",
-                max_width=320
-            ),
-            icon=folium.Icon(color="blue", icon="flag", prefix="fa"),
-            tooltip="Plan sub Factory"
-        ).add_to(m)
-
-    if (pd.notnull(lat_today) and pd.notnull(lon_today) and
-        pd.notnull(lat_lead)  and pd.notnull(lon_lead)):
-
-        
-        sub_name = row.get("Plan Sub Factory", "n/a")
-        if isinstance(sub_name, str):
-            sub_name = sub_name.strip() or "n/a"
-
-        to_name_raw = row.get("Plan lead Factory", "n/a")
-    to_name = to_name_raw.strip() if isinstance(to_name_raw, str) else str(to_name_raw) or "n/a"
-    route_key = (to_name, sub_name)
-    total_volume = volume_lookup.get(route_key, None)
-    vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
-
-    tooltip_html = f"{from_name} → {to_name}<br>Volume: {vol_txt}"
-    popup_html   = (
-        f"<b>From:</b> {from_name} → <b>To:</b> {to_name}<br>"
-        f"<b>Volume:</b> {vol_txt}"
-    )
-
-    path = AntPath(
-        locations=[[lat_today, lon_today], [lat_lead, lon_lead]],
-        color="#e63946",
-        weight=5,
-        opacity=0.9,
-        dash_array=[10, 20],
-        delay=800,
-        pulse_color="#ffd166",
-        paused=False,
-        reverse=False,
-        hardware_accelerated=True
-    )
-    folium.Tooltip(tooltip_html, sticky=True).add_to(path)
-    folium.Popup(popup_html, max_width=320).add_to(path)
-    path.add_to(m)
-
-    arrow_js = f"""
-    <script>
-    try {{
-        var lyr = {path.get_name()};
-        if (lyr && typeof lyr.arrowheads === 'function') {{
-        lyr.arrowheads({{
-            size: '16px',
-            frequency: 'endonly',
-            yawn: 45,
-            fill: true,
-            color: '#e63946'
-        }});
-        }}
-    }} catch (e) {{
-        console.warn('Arrowheads plugin failed:', e);
-    }}
-    </script>
-    """
-    m.get_root().html.add_child(Element(arrow_js))
-
-    bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
-# Optional: Fit map to bounds
-if bounds:
-    m.fit_bounds(bounds)
-
-
-# Keep for auto-zoom
-bounds.extend([[lat_today, lon_today], [lat_lead, lon_lead]])
-
-# Auto-zoom to all drawn flows
-if bounds:
-    m.fit_bounds(bounds)
-
-
-
-# ---------- Render ----------
-st.subheader("Lead Factory to Sub Factory")
-st.components.v1.html(m._repr_html_(), height=600)
-
-
-
 # Add location columns to the table view
 filtered_df = filtered_df.copy()
 filtered_df["Factory Today Location"] = filtered_df.apply(
@@ -625,6 +686,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
