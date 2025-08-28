@@ -184,7 +184,6 @@ filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_s
 
 
 
-
 # === Additional KPIs ===
 
 st.markdown("""
@@ -210,19 +209,29 @@ Germany = "Boppard, Germany"
 China = "Changzhou, China"
 India = "Pune, India"
 
+with kpi_main:
+    st.metric("Main Factories (Unique)", filtered_df["Factory today"].nunique())
+    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == Germany]["main_vol"].sum()
+    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == China]["main_vol"].sum()
+    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == India]["main_vol"].sum()
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol1:,.0f}")
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol2:,.0f}")
+    st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol3:,.0f}")
+
 
 # Volume by factory type
 st.markdown("### Volume by Factory Type")
 kpi_main, kpi_lead, kpi_sub = st.columns(3)
+
 with kpi_main:
-    st.metric("Main Factories (Unique)", filtered_df["Factory today"].nunique())
-    st.metric("Main Volume (Total)", f"{filtered_df['main_vol'].sum():,.0f}")
+    st.metric("Main Factories", filtered_df["Factory today"].nunique())
+    st.metric("Main Volume", f"{filtered_df['main_vol'].sum():,.0f}")
 with kpi_lead:
-    st.metric("Lead Factories (Unique)", filtered_df["Plan Lead Factory"].nunique())
-    st.metric("Lead Volume (Total)", f"{filtered_df['lead_vol'].sum():,.0f}")
+    st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
+    st.metric("Lead Volume", f"{filtered_df['lead_vol'].sum():,.0f}")
 with kpi_sub:
-    st.metric("Sub Factories (Unique)", filtered_df["Plan Sub Factory"].nunique())
-    st.metric("Sub Volume (Total)", f"{filtered_df['sub_vol'].sum():,.0f}")
+    st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
+    st.metric("Sub Volume", f"{filtered_df['sub_vol'].sum():,.0f}")
 
 
 
@@ -753,6 +762,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
