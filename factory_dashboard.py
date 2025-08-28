@@ -161,9 +161,6 @@ with st.sidebar:
     st.header("Map Settings")
     tile_options = {
         "OpenStreetMap": "OpenStreetMap",
-        "Stamen Terrain": "Stamen Terrain",
-        "Stamen Toner": "Stamen Toner",
-        "Stamen Watercolor": "Stamen Watercolor",
         "CartoDB Positron": "CartoDB positron",
         "CartoDB Dark Matter": "CartoDB dark_matter"
     }
@@ -773,6 +770,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
