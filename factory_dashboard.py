@@ -241,24 +241,44 @@ css = f"""
 """
 m.get_root().header.add_child(Element(css))
 
-# Group volume by route
-grouped = filtered_df.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
+# Normalize names and coerce volumes
+filtered_df = filtered_df.copy()
+
+for col in ["Factory today", "Plan Lead Factory"]:
+    filtered_df[col] = (
+        filtered_df[col]
+        .astype(str)
+        .str.strip()
+    )
+
+for vol_col in ["lead_vol", "main_vol"]:
+    if vol_col in filtered_df.columns:
+        filtered_df[vol_col] = pd.to_numeric(filtered_df[vol_col], errors="coerce")
+
+# Group volume by route on normalized names
+grouped = (
+    filtered_df
+    .dropna(subset=["Factory today", "Plan Lead Factory"])
+    .groupby(["Factory today", "Plan Lead Factory"], as_index=False)["lead_vol"]
+    .sum()
+)
+
 volume_lookup = {
-    (row["Factory today"], row["Plan Lead Factory"]): row["lead_vol"]
-    for _, row in grouped.iterrows()
+    (r["Factory today"], r["Plan Lead Factory"]): r["lead_vol"]
+    for _, r in grouped.iterrows()
 }
 
 # Plot markers and flows
 bounds = []
 for _, row in filtered_df.iterrows():
-    factory_name = row.get("Factory today", "n/a").strip()
-    lead_factory_name = row.get("Plan Lead Factory", "n/a").strip()
-    main_vol = row.get("main_vol", "n/a")
-    lead_vol = row.get("lead_vol", "n/a")
-    lat_today = row.get("Lat_today", None)
-    lon_today = row.get("Lon_today", None)
-    lat_lead = row.get("Lat_lead", None)
-    lon_lead = row.get("Lon_lead", None)
+      factory_name = row.get("Factory today", "n/a")  # already stripped above
+      lead_factory_name = row.get("Plan Lead Factory", "n/a")
+      main_vol = row.get("main_vol", "n/a")
+      lead_vol = row.get("lead_vol", "n/a")
+      lat_today = row.get("Lat_today", None)
+      lon_today = row.get("Lon_today", None)
+      lat_lead = row.get("Lat_lead", None)
+      lon_lead = row.get("Lon_lead", None)
     sales_region = row.get(sales_region_col, "n/a") if sales_region_col else "n/a"
 
     # Add markers
@@ -286,8 +306,8 @@ for _, row in filtered_df.iterrows():
     if pd.notnull(lat_today) and pd.notnull(lon_today) and pd.notnull(lat_lead) and pd.notnull(lon_lead):
         route_key = (factory_name, lead_factory_name)
         total_volume = volume_lookup.get(route_key, None)
-        vol_txt = f"{total_volume:.0f}" if total_volume is not None else "n/a"
-
+        vol_txt = f"{total_volume:,.0f}" if total_volume is not None else "n/a"
+       
         tooltip_html = f"{factory_name} → {lead_factory_name}<br>Volume: {vol_txt}"
         popup_html = f"<b>From:</b> {factory_name} → <b>To:</b> {lead_factory_name}<br><b>Volume:</b> {vol_txt}"
 
@@ -533,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
