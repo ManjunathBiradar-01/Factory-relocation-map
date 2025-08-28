@@ -468,6 +468,13 @@ st.subheader("Main Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=400)
 
 
+# Lead Factories
+lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
+st.markdown("#### Lead Factories")
+st.dataframe(lead_summary)
+
+
+
 #2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
@@ -712,20 +719,15 @@ st.components.v1.html(m._repr_html_(), height=400)
 # === Volume by Each Factory ===
 st.markdown("### Volume by Each Factory")
 
-# Main Factories
-main_summary = filtered_df.groupby("Factory today")["main_vol"].sum().reset_index()
-st.markdown("#### Main Factories")
-st.dataframe(main_summary)
-
-# Lead Factories
-lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
-st.markdown("#### Lead Factories")
-st.dataframe(lead_summary)
-
 # Sub Factories
 sub_summary = filtered_df.groupby("Plan Sub Factory")["sub_vol"].sum().reset_index()
 st.markdown("#### Sub Factories")
 st.dataframe(sub_summary)
+
+# Main Factories
+main_summary = filtered_df.groupby("Factory today")["main_vol"].sum().reset_index()
+st.markdown("#### Main Factories")
+st.dataframe(main_summary)
 
 
 
@@ -758,6 +760,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
