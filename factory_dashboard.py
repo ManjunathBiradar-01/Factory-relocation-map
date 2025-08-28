@@ -99,6 +99,34 @@ else:
         st.stop()
 
 
+with st.sidebar:
+    machine_code_filter = st.multiselect(
+        "Machine Code (FM)",
+        options=sorted(df["FM"].dropna().astype(str).unique().tolist())
+    )
+    machine_name_filter = st.multiselect(
+        "Machine Name",
+        options=sorted(df["Name"].dropna().astype(str).unique().tolist())
+    )
+    engine_filter = st.multiselect(
+        "Select Engine Type",
+        options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
+    )
+    emission_filter = st.multiselect(
+        "Select Emission Level",
+        options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
+    )
+    sales_region_col = find_sales_region_col(df.columns)
+    if sales_region_col:
+        sales_region_filter = st.multiselect(
+            "Sales Region",
+            options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
+        )
+    else:
+        sales_region_filter = []
+
+
+
 
 
 # ---------- Data loader ----------
@@ -173,31 +201,6 @@ else:
     )
 
 
-with st.sidebar:
-    machine_code_filter = st.multiselect(
-        "Machine Code (FM)",
-        options=sorted(df["FM"].dropna().astype(str).unique().tolist())
-    )
-    machine_name_filter = st.multiselect(
-        "Machine Name",
-        options=sorted(df["Name"].dropna().astype(str).unique().tolist())
-    )
-    engine_filter = st.multiselect(
-        "Select Engine Type",
-        options=sorted(df["Engine"].dropna().astype(str).unique().tolist())
-    )
-    emission_filter = st.multiselect(
-        "Select Emission Level",
-        options=sorted(df["Emission"].dropna().astype(str).unique().tolist())
-    )
-    sales_region_col = find_sales_region_col(df.columns)
-    if sales_region_col:
-        sales_region_filter = st.multiselect(
-            "Sales Region",
-            options=sorted(df[sales_region_col].dropna().astype(str).unique().tolist())
-        )
-    else:
-        sales_region_filter = []
 
 # ---------- Apply filters (updated) ----------
 filtered_df = df.copy()
@@ -214,6 +217,11 @@ if sales_region_col and sales_region_filter:
     filtered_df = filtered_df[filtered_df[sales_region_col].astype(str).isin(sales_region_filter)]
 
 
+
+# Friendly coordinate strings (optional for table)
+filtered_df["Coords_today"] = filtered_df.apply(lambda r: format_coords(r["Lat_today"], r["Lon_today"]), axis=1)
+filtered_df["Coords_lead"]  = filtered_df.apply(lambda r: format_coords(r["Lat_lead"],  r["Lon_lead"]),  axis=1)
+filtered_df["Coords_sub"]   = filtered_df.apply(lambda r: format_coords(r["Lat_sub"],   r["Lon_sub"]),   axis=1)
 
 
 
@@ -773,6 +781,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
