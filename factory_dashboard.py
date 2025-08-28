@@ -89,6 +89,8 @@ elif "excel_file" in st.session_state:
     uploaded_file = st.session_state["excel_file"]
 else:
     try:
+        import requests
+        from io import BytesIO
         response = requests.get(DEFAULT_FILE_URL)
         response.raise_for_status()
         uploaded_file = BytesIO(response.content)
@@ -756,6 +758,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
