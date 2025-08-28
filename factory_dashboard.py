@@ -521,7 +521,7 @@ sub_by_factory = (
 if sales_region_col:
     region_today = (
         filtered_df.dropna(subset=["lan Sub Factory"])
-        .groupby("lan Sub Factory")[sales_region_col]
+        .groupby("Plan Sub Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
     region_sub = (
@@ -689,6 +689,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
