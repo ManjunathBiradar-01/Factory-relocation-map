@@ -205,16 +205,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # You can make this dynamic using a dropdown if needed
-South Carolina, USA = "South Carolina, USA"  
-Boppard, Germany = "Boppard, Germany"
-Changzhou, China = "Changzhou, China"
-Pune, India = "Pune, India"
+USA = "South Carolina, USA"  
+Germany = "Boppard, Germany"
+China = "Changzhou, China"
+India = "Pune, India"
 
 with kpi_main:
     st.metric("Main Factories (Unique)", filtered_df["Factory today"].nunique())
-    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == Boppard, Germany]["main_vol"].sum()
-    filtered_main_vol2 = filtered_df[filtered_df["Factory today"] == Changzhou, China]["main_vol"].sum()
-    filtered_main_vol3 = filtered_df[filtered_df["Factory today"] == Pune, India]["main_vol"].sum()
+    filtered_main_vol1 = filtered_df[filtered_df["Factory today"] == Germany]["main_vol"].sum()
+    filtered_main_vol2 = filtered_df[filtered_df["Factory today"] == China]["main_vol"].sum()
+    filtered_main_vol3 = filtered_df[filtered_df["Factory today"] == India]["main_vol"].sum()
     st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol1:,.0f}")
     st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol2:,.0f}")
     st.metric(f"Main Volume (Total) for {selected_factory}", f"{filtered_main_vol3:,.0f}")
@@ -762,6 +762,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
