@@ -498,7 +498,7 @@ for col in ["Plan Lead Factory", "Plan Sub Factory"]:
         filtered_df[col] = filtered_df[col].astype("string").str.strip()
 
 # Coerce volume columns to numeric
-for vcol in ["main_vol", "sub_vol"]:
+for vcol in ["lead_vol", "sub_vol"]:
     if vcol in filtered_df.columns:
         filtered_df[vcol] = pd.to_numeric(filtered_df[vcol], errors="coerce")
 
@@ -775,6 +775,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
