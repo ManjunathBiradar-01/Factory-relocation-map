@@ -429,22 +429,35 @@ st.components.v1.html(m._repr_html_(), height=600)
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
 
-# Ensure names match between grouping and lookup (strip whitespace)
+# Keep NA as NA while trimming whitespace
 for col in ["Plan Lead Factory", "Plan Sub Factory"]:
     if col in filtered_df.columns:
-        filtered_df[col] = filtered_df[col].astype(str).str.strip()
+        filtered_df[col] = filtered_df[col].astype("string").str.strip()
 
 # Coerce volume columns to numeric
 for vcol in ["main_vol", "sub_vol"]:
     if vcol in filtered_df.columns:
         filtered_df[vcol] = pd.to_numeric(filtered_df[vcol], errors="coerce")
 
-# Center map based on available coordinates
-coords = []
-if not filtered_df.empty:
-    coords.extend(filtered_df[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
-    coords.extend(filtered_df[["Lat_sub", "Lon_sub"]].dropna().values.tolist())
+# === 0b) Keep only rows that can form a connection to Sub and have positive volume ===
+df_pos = filtered_df[
+    filtered_df["Plan Sub Factory"].notna()
+    & filtered_df["Plan Lead Factory"].notna()
+    & pd.notnull(filtered_df["Lat_lead"]) & pd.notnull(filtered_df["Lon_lead"])
+    & pd.notnull(filtered_df["Lat_sub"])  & pd.notnull(filtered_df["Lon_sub"])
+    & (filtered_df["sub_vol"] > 0)
+].copy()
 
+# If nothing to draw, exit gracefully
+if df_pos.empty:
+    st.subheader("Lead Factory To Sub Factory")
+    st.info("No Sub routes with sub_vol > 0 for the current filters.")
+    st.stop()
+
+# Center map based on available coordinates (use the positive subset)
+coords = []
+coords.extend(df_pos[["Lat_lead", "Lon_lead"]].dropna().values.tolist())
+coords.extend(df_pos[["Lat_sub", "Lon_sub"]].dropna().values.tolist())
 
 center_lat = float(np.mean([c[0] for c in coords])) if coords else 20.0
 center_lon = float(np.mean([c[1] for c in coords])) if coords else 0.0
@@ -456,7 +469,7 @@ m.get_root().header.add_child(JavascriptLink(
     "https://unpkg.com/leaflet-arrowheads@1.2.2/src/leaflet-arrowheads.js"
 ))
 
-# Custom CSS for better styling  (✅ use real <style> tags, not escaped)
+# Custom CSS (✅ real HTML)
 FONT_SIZE_PX = 16
 css = f"""
 <style>
@@ -483,70 +496,65 @@ css = f"""
 """
 m.get_root().header.add_child(Element(css))
 
-# === 1) Build unique coordinates per factory ===
-coords_sub = (
-    filtered_df.dropna(subset=["Plan Sub Factory", "Lat_sub", "Lon_sub"])
-    .drop_duplicates("Plan Sub Factory")
-    .set_index("Plan Sub Factory")[["Lat_sub", "Lon_sub"]]
-    .to_dict("index")
-)
-
+# === 1) Build unique coordinates per factory (from positive routes only) ===
 coords_lead = (
-    filtered_df.dropna(subset=["Plan Lead Factory", "Lat_lead", "Lon_lead"])
+    df_pos.dropna(subset=["Plan Lead Factory", "Lat_lead", "Lon_lead"])
     .drop_duplicates("Plan Lead Factory")
     .set_index("Plan Lead Factory")[["Lat_lead", "Lon_lead"]]
     .to_dict("index")
 )
 
-# === 2) Aggregate volumes ===
+coords_sub = (
+    df_pos.dropna(subset=["Plan Sub Factory", "Lat_sub", "Lon_sub"])
+    .drop_duplicates("Plan Sub Factory")
+    .set_index("Plan Sub Factory")[["Lat_sub", "Lon_sub"]]
+    .to_dict("index")
+)
+
+# === 2) Aggregate volumes (from positive routes only) ===
 routes = (
-    filtered_df.dropna(subset=["Plan Lead Factory", "Plan Sub Factory"])
+    df_pos
     .groupby(["Plan Lead Factory", "Plan Sub Factory"], as_index=False)["sub_vol"]
     .sum()
 )
 
+# Lead factory: total main_vol across rows that participate in a positive Sub connection
 lead_by_factory = (
-    filtered_df.dropna(subset=["Plan Lead Factory"])
-    .groupby("Plan Lead Factory", as_index=False)["main_vol"]
-    .sum()
+    df_pos.groupby("Plan Lead Factory", as_index=False)["main_vol"].sum()
 )
 
+# Sub factory: total sub_vol across positive connections
 sub_by_factory = (
-    filtered_df.dropna(subset=["Plan Sub Factory"])
-    .groupby("Plan Lead Factory", as_index=False)["sub_vol"]
-    .sum()
+    df_pos.groupby("Plan Sub Factory", as_index=False)["sub_vol"].sum()
 )
 
-# (Optional) representative Sales Region (mode)
+# (Optional) representative Sales Region (mode) for each factory
 if sales_region_col:
-    region_today = (
-        filtered_df.dropna(subset=["Plan Sub Factory"])
-        .groupby("Plan Sub Factory")[sales_region_col]
+    region_lead = (
+        df_pos.groupby("Plan Lead Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
     region_sub = (
-        filtered_df.dropna(subset=["Plan Sub Factory"])
-        .groupby("Plan Sub Factory")[sales_region_col]
+        df_pos.groupby("Plan Sub Factory")[sales_region_col]
         .agg(lambda s: s.mode().iat[0] if not s.mode().empty else "n/a")
     )
 else:
-    # safe defaults so we can reference below
     region_lead = pd.Series(dtype="object")
     region_sub = pd.Series(dtype="object")
 
-# === 3) 'lead' factory markers once each (aggregated main_vol) ===
-for _, r in main_by_factory.iterrows():
+# === 3) Lead factory markers once each (aggregated main_vol) ===
+for _, r in lead_by_factory.iterrows():
     f = r["Plan Lead Factory"]
-    if f in coords_today:
+    if f in coords_lead:
         lat_lead = coords_lead[f]["Lat_lead"]
         lon_lead = coords_lead[f]["Lon_lead"]
-        vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        vol_txt = f"{r['main_vol']:,.0f}" if pd.notnull(r["main_vol"]) else "n/a"
         sr = (region_lead[f] if sales_region_col and f in region_lead.index else "n/a")
 
-        tooltip = f"{f} | Lead Vol: {vol_txt}"
+        tooltip = f"{f} | Main Vol: {vol_txt}"
         popup = (
-            f"<b>Factory:</b> {f}"
-            f"<br><b>Lead Volume:</b> {vol_txt}"
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Main Volume:</b> {vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -554,13 +562,13 @@ for _, r in main_by_factory.iterrows():
             [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")  # try 'cog' if 'industry' doesn't render
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")
         ).add_to(m)
 
-# === 4) 'sub' factory markers once each (aggregated lead_vol) ===
+# === 4) Sub factory markers once each (aggregated sub_vol) ===
 for _, r in sub_by_factory.iterrows():
     f = r["Plan Sub Factory"]
-    if f in coords_lead:
+    if f in coords_sub:
         lat_sub = coords_sub[f]["Lat_sub"]
         lon_sub = coords_sub[f]["Lon_sub"]
         vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
@@ -580,14 +588,14 @@ for _, r in sub_by_factory.iterrows():
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
 
-# === 5) Draw each route once with summed lead_vol ===
+# === 5) Draw each route once with summed sub_vol ===
 bounds = []
 for _, r in routes.iterrows():
     fr = r["Plan Lead Factory"]
     to = r["Plan Sub Factory"]
     vol = r["sub_vol"]
 
-    if fr in coords_today and to in coords_lead:
+    if fr in coords_lead and to in coords_sub:
         lat_lead = coords_lead[fr]["Lat_lead"]
         lon_lead = coords_lead[fr]["Lon_lead"]
         lat_sub = coords_sub[to]["Lat_sub"]
@@ -653,7 +661,6 @@ m.get_root().html.add_child(Element(arrowheads_once_js))
 if bounds:
     m.fit_bounds(bounds)
 
-
 # Render in Streamlit
 st.subheader("Lead Factory To Sub Factory")
 st.components.v1.html(m._repr_html_(), height=600)
@@ -689,6 +696,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
