@@ -282,25 +282,25 @@ for _, row in filtered_df.iterrows():
       sales_region = row.get(sales_region_col, "n/a") if sales_region_col else "n/a"
 
     # Add markers
-    if pd.notnull(lat_today) and pd.notnull(lon_today):
-        tooltip = f"{factory_name} | Main Vol: {main_vol}"
-        popup = f"<b>Factory:</b> {factory_name}<br><b>Main Volume:</b> {main_vol}<br><b>Sales Region:</b> {sales_region}"
-        folium.Marker(
-            [lat_today, lon_today],
-            tooltip=tooltip,
-            popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")
-        ).add_to(m)
+      if pd.notnull(lat_today) and pd.notnull(lon_today):
+          tooltip = f"{factory_name} | Main Vol: {main_vol}"
+          popup = f"<b>Factory:</b> {factory_name}<br><b>Main Volume:</b> {main_vol}<br><b>Sales Region:</b> {sales_region}"
+          folium.Marker(
+              [lat_today, lon_today],
+              tooltip=tooltip,
+              popup=folium.Popup(popup, max_width=320),
+              icon=folium.Icon(color="red", icon="industry", prefix="fa")
+          ).add_to(m)
 
-    if pd.notnull(lat_lead) and pd.notnull(lon_lead):
-        tooltip = f"{lead_factory_name} | Lead Vol: {lead_vol}"
-        popup = f"<b>Lead Factory:</b> {lead_factory_name}<br><b>Lead Volume:</b> {lead_vol}<br><b>Sales Region:</b> {sales_region}"
-        folium.Marker(
-            [lat_lead, lon_lead],
-            tooltip=tooltip,
-            popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
-        ).add_to(m)
+      if pd.notnull(lat_lead) and pd.notnull(lon_lead):
+          tooltip = f"{lead_factory_name} | Lead Vol: {lead_vol}"
+          popup = f"<b>Lead Factory:</b> {lead_factory_name}<br><b>Lead Volume:</b> {lead_vol}<br><b>Sales Region:</b> {sales_region}"
+          folium.Marker(
+              [lat_lead, lon_lead],
+              tooltip=tooltip,
+              popup=folium.Popup(popup, max_width=320),
+              icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+          ).add_to(m)
 
     # Draw flow path with summed volume
     if pd.notnull(lat_today) and pd.notnull(lon_today) and pd.notnull(lat_lead) and pd.notnull(lon_lead):
@@ -553,6 +553,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
