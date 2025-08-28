@@ -643,7 +643,7 @@ for _, r in lead_by_factory.iterrows():
         popup = (
             f"<b>Lead Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {vol_txt}"
-            f"<br><b>Main Volume:</b> {sub_by_factory.loc[sub_by_factory['Plan Sub Factory'] == f, 'sub_vol'].sum():,.0f}" if f in sub_by_factory["Plan Sub Factory"].values else ""
+            f"<br><b>Lead Volume:</b> {sub_by_factory.loc[sub_by_factory['Plan Sub Factory'] == f, 'sub_vol'].sum():,.0f}" if f in sub_by_factory["Plan Sub Factory"].values else ""
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
@@ -776,6 +776,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
