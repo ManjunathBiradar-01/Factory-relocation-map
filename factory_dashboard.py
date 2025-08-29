@@ -822,30 +822,34 @@ with st.expander("Show filtered data"):
 
 
 import pandas as pd
+import streamlit as st
 import plotly.graph_objects as go
 
-# Load the Excel file
+st.set_page_config(page_title="Factory Flow Sankey", layout="wide")
+st.title("Factory Volume Flow: Main → Lead → Sub")
+
+# Load Excel file
 file_path = "Footprint_SDR.xlsx"
 df_from = pd.read_excel(file_path, sheet_name="From", engine="openpyxl")
 df_to = pd.read_excel(file_path, sheet_name="To", engine="openpyxl")
 df_sub = pd.read_excel(file_path, sheet_name="Sub-Factory", engine="openpyxl")
 
-# Normalize column names
+# Clean column names
 df_from.columns = df_from.columns.str.strip()
 df_to.columns = df_to.columns.str.strip()
 df_sub.columns = df_sub.columns.str.strip()
 
-# Merge relevant columns
+# Merge factory flow data
 merged = df_from[["FM", "Factory today", "Volume"]].merge(
     df_to[["FM", "Plan Lead Factory"]], on="FM", how="left"
 ).merge(
     df_sub[["FM", "Plan Sub Factory"]], on="FM", how="left"
 )
 
-# Drop rows with missing factory names
+# Drop incomplete rows
 merged = merged.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
 
-# Create source-target-volume triplets
+# Aggregate volumes
 main_to_lead = merged.groupby(["Factory today", "Plan Lead Factory"])["Volume"].sum().reset_index()
 lead_to_sub = merged.groupby(["Plan Lead Factory", "Plan Sub Factory"])["Volume"].sum().reset_index()
 
@@ -856,7 +860,6 @@ nodes = pd.Series(pd.concat([
     lead_to_sub["Plan Sub Factory"]
 ]).unique())
 
-# Map node names to indices
 node_map = {name: i for i, name in enumerate(nodes)}
 
 # Create Sankey links
@@ -879,7 +882,7 @@ links = {
     "value": pd.concat([links_main_lead["value"], links_lead_sub["value"]])
 }
 
-# Create Sankey diagram
+# Build Sankey diagram
 fig = go.Figure(data=[go.Sankey(
     node=dict(
         pad=15,
@@ -895,7 +898,9 @@ fig = go.Figure(data=[go.Sankey(
 )])
 
 fig.update_layout(title_text="Volume Flow: Main Factory → Lead → Sub Factory", font_size=10)
-fig.write_html("sankey_factory_flow.html")
+
+# Display in Streamlit
+st.components.v1.html(fig.to_html(include_plotlyjs='cdn'), height=600, scrolling=True)
 
 
 
