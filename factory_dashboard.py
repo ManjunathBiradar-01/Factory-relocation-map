@@ -827,37 +827,38 @@ import plotly.graph_objects as go
 required_cols = ["Factory today", "Plan Lead Factory", "Plan Sub Factory", "lead_vol", "sub_vol"]
 if all(col in filtered_df.columns for col in required_cols):
 
-    # Drop rows with missing factory names
     df_sankey = filtered_df.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
 
-    # Create labels
-    labels = list(pd.unique(df_sankey[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()))
+    # Include all unique factories, even if volume shifted to itself
+    labels = pd.unique(df_sankey[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()).tolist()
     label_to_index = {label: i for i, label in enumerate(labels)}
 
     sources = []
     targets = []
     values = []
+    colors = []
 
-    # Flow from Factory today to Plan Lead Factory
+    # Lead shift: Factory today → Plan Lead Factory
     flow1 = df_sankey.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
     for _, row in flow1.iterrows():
         sources.append(label_to_index[row["Factory today"]])
         targets.append(label_to_index[row["Plan Lead Factory"]])
         values.append(row["lead_vol"])
+        colors.append("rgba(0, 128, 255, 0.6)")  # Blue
 
-    # Flow from Plan Lead Factory to Plan Sub Factory
+    # Sub shift: Plan Lead Factory → Plan Sub Factory
     flow2 = df_sankey.groupby(["Plan Lead Factory", "Plan Sub Factory"])["sub_vol"].sum().reset_index()
     for _, row in flow2.iterrows():
         sources.append(label_to_index[row["Plan Lead Factory"]])
         targets.append(label_to_index[row["Plan Sub Factory"]])
         values.append(row["sub_vol"])
+        colors.append("rgba(255, 102, 0, 0.6)")  # Orange
 
-    # Create Sankey diagram
     fig = go.Figure(data=[go.Sankey(
         arrangement="snap",
         node=dict(
-            pad=30,
-            thickness=10,
+            pad=15,
+            thickness=20,
             line=dict(color="black", width=0.5),
             label=labels,
             color="blue"
@@ -866,13 +867,13 @@ if all(col in filtered_df.columns for col in required_cols):
             source=sources,
             target=targets,
             value=values,
-            color="rgba(255, 153, 51, 0.6)",
+            color=colors,
             hovertemplate="%{source.label} → %{target.label}<br>Volume: %{value}<extra></extra>"
         )
     )])
 
     fig.update_layout(
-        title_text="Animated Factory Volume Flow",
+        title_text="Factory Volume Flow with Lead & Sub Shifts (Animated)",
         font_size=10,
         transition=dict(duration=500, easing="cubic-in-out")
     )
@@ -881,8 +882,6 @@ if all(col in filtered_df.columns for col in required_cols):
 
 else:
     st.warning("Required columns for Sankey diagram are missing in filtered_df.")
-
-
 
 
 
