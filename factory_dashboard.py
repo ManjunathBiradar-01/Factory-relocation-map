@@ -615,6 +615,13 @@ routes = (
     .sum()
 )
 
+
+summary = merged.groupby("Plan Lead Factory")[
+    ["main_vol", "lead_vol", "sub_vol"]
+].sum().reset_index()
+
+
+
 # Lead factory: total main_vol across rows that participate in a positive Sub connection
 lead_by_factory = (
     df_pos.groupby("Plan Lead Factory", as_index=False)["lead_vol"].sum()
@@ -672,6 +679,7 @@ for _, r in summary.iterrows():
             popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
+
 
 # === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
 lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
@@ -816,6 +824,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
