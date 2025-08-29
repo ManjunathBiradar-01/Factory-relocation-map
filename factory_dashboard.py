@@ -821,78 +821,66 @@ with st.expander("Show filtered data"):
 
 
 
-import pandas as pd
 import plotly.graph_objects as go
 
-# Load your Excel file
-df_from = pd.read_excel("Footprint_SDR.xlsx", sheet_name="From", engine="openpyxl")
-df_to = pd.read_excel("Footprint_SDR.xlsx", sheet_name="To", engine="openpyxl")
-df_sub = pd.read_excel("Footprint_SDR.xlsx", sheet_name="Sub-Factory", engine="openpyxl")
+# Ensure required columns exist
+required_cols = ["Factory today", "Plan Lead Factory", "Plan Sub Factory", "lead_vol", "sub_vol"]
+if all(col in filtered_df.columns for col in required_cols):
 
-# Normalize column names
-for df in [df_from, df_to, df_sub]:
-    df.columns = df.columns.str.strip()
+    # Drop rows with missing factory names
+    df_sankey = filtered_df.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
 
-# Rename volume columns
-df_from = df_from.rename(columns={"Volume": "main_vol"})
-df_to = df_to.rename(columns={"Volume": "lead_vol"})
-df_sub = df_sub.rename(columns={"Volume": "sub_vol"})
+    # Create labels
+    labels = list(pd.unique(df_sankey[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()))
+    label_to_index = {label: i for i, label in enumerate(labels)}
 
-# Merge all data into one DataFrame
-merged = df_from.merge(df_to[["FM", "Plan Lead Factory", "lead_vol"]], on="FM", how="left")
-merged = merged.merge(df_sub[["FM", "Plan Sub Factory", "sub_vol"]], on="FM", how="left")
+    sources = []
+    targets = []
+    values = []
 
-# Drop rows with missing factory names
-merged = merged.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
+    # Flow from Factory today to Plan Lead Factory
+    flow1 = df_sankey.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
+    for _, row in flow1.iterrows():
+        sources.append(label_to_index[row["Factory today"]])
+        targets.append(label_to_index[row["Plan Lead Factory"]])
+        values.append(row["lead_vol"])
 
-# Create Sankey diagram components
-labels = list(pd.unique(merged[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()))
-label_to_index = {label: i for i, label in enumerate(labels)}
+    # Flow from Plan Lead Factory to Plan Sub Factory
+    flow2 = df_sankey.groupby(["Plan Lead Factory", "Plan Sub Factory"])["sub_vol"].sum().reset_index()
+    for _, row in flow2.iterrows():
+        sources.append(label_to_index[row["Plan Lead Factory"]])
+        targets.append(label_to_index[row["Plan Sub Factory"]])
+        values.append(row["sub_vol"])
 
-sources = []
-targets = []
-values = []
+    # Create Sankey diagram
+    fig = go.Figure(data=[go.Sankey(
+        arrangement="snap",
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=labels,
+            color="blue"
+        ),
+        link=dict(
+            source=sources,
+            target=targets,
+            value=values,
+            color="rgba(255, 153, 51, 0.6)",
+            hovertemplate="%{source.label} → %{target.label}<br>Volume: %{value}<extra></extra>"
+        )
+    )])
 
-# Flow from Factory today to Plan Lead Factory
-flow1 = merged.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
-for _, row in flow1.iterrows():
-    sources.append(label_to_index[row["Factory today"]])
-    targets.append(label_to_index[row["Plan Lead Factory"]])
-    values.append(row["lead_vol"])
-
-# Flow from Plan Lead Factory to Plan Sub Factory
-flow2 = merged.groupby(["Plan Lead Factory", "Plan Sub Factory"])["sub_vol"].sum().reset_index()
-for _, row in flow2.iterrows():
-    sources.append(label_to_index[row["Plan Lead Factory"]])
-    targets.append(label_to_index[row["Plan Sub Factory"]])
-    values.append(row["sub_vol"])
-
-# Create animated Sankey diagram
-fig = go.Figure(data=[go.Sankey(
-    arrangement="snap",
-    node=dict(
-        pad=15,
-        thickness=20,
-        line=dict(color="black", width=0.5),
-        label=labels,
-        color="blue"
-    ),
-    link=dict(
-        source=sources,
-        target=targets,
-        value=values,
-        color="rgba(255, 153, 51, 0.6)",
-        hovertemplate="%{source.label} → %{target.label}<br>Volume: %{value}<extra></extra>"
+    fig.update_layout(
+        title_text="Animated Factory Volume Flow",
+        font_size=10,
+        transition=dict(duration=500, easing="cubic-in-out")
     )
-)])
 
-fig.update_layout(
-    title_text="Animated Factory Volume Flow",
-    font_size=10,
-    transition=dict(duration=500, easing="cubic-in-out")
-)
+    st.plotly_chart(fig, use_container_width=True)
 
-fig.show()
+else:
+    st.warning("Required columns for Sankey diagram are missing in filtered_df.")
 
 
 
