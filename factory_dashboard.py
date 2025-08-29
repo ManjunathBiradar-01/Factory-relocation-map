@@ -856,8 +856,8 @@ if all(col in filtered_df.columns for col in required_cols):
     fig = go.Figure(data=[go.Sankey(
         arrangement="snap",
         node=dict(
-            pad=15,
-            thickness=20,
+            pad=30,
+            thickness=10,
             line=dict(color="black", width=0.5),
             label=labels,
             color="blue"
@@ -881,6 +881,7 @@ if all(col in filtered_df.columns for col in required_cols):
 
 else:
     st.warning("Required columns for Sankey diagram are missing in filtered_df.")
+
 
 
 
