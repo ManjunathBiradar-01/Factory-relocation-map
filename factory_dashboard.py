@@ -881,7 +881,7 @@ fig = go.Figure(data=[go.Sankey(
     node=dict(
         pad=15,
         thickness=20,
-        line=dict(color="black", width=0.5),
+        line=dict(color="#ffdc43", width=0.5),
         label=nodes.tolist()
     ),
     link=dict(
@@ -894,6 +894,7 @@ fig.update_layout(title_text="Country-Level Volume Flow: Main → Lead → Sub",
 
 # Display in Streamlit
 st.components.v1.html(fig.to_html(include_plotlyjs='cdn'), height=600, scrolling=True)
+
 
 
 
