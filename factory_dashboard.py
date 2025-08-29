@@ -821,59 +821,6 @@ with st.expander("Show filtered data"):
 
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import networkx as nx
-import streamlit as st
-
-# Load data from Excel
-file_path = "Footprint_SDR.xlsx"
-df_from = pd.read_excel(file_path, sheet_name="From", engine="openpyxl")
-df_to = pd.read_excel(file_path, sheet_name="To", engine="openpyxl")
-
-# Extract country names
-df_from["Main Country"] = df_from["Factory today"].str.split(",").str[-1].str.strip()
-df_to["Lead Country"] = df_to["Plan Lead Factory"].str.split(",").str[-1].str.strip()
-
-# Merge and clean
-merged = df_from[["FM", "Main Country", "Volume"]].merge(
-    df_to[["FM", "Lead Country"]], on="FM", how="left"
-)
-merged = merged.dropna(subset=["Main Country", "Lead Country"])
-
-# Aggregate volumes
-country_flow = merged.groupby(["Main Country", "Lead Country"])["Volume"].sum().reset_index()
-
-# Create graph
-G = nx.DiGraph()
-for _, row in country_flow.iterrows():
-    src = row["Main Country"] + "_L"
-    tgt = row["Lead Country"] + "_R"
-    vol = row["Volume"]
-    G.add_edge(src, tgt, weight=vol)
-
-# Fixed positions for layout
-positions = {
-    "China_L": (-1, 3), "India_L": (-1, 1), "Germany_L": (-1, -1), "USA_L": (-1, -3),
-    "China_R": (1, 3), "India_R": (1, 1), "Germany_R": (1, -1), "USA_R": (1, -3)
-}
-
-# Draw graph
-fig, ax = plt.subplots(figsize=(10, 6))
-nx.draw(G, pos=positions, with_labels=True, node_size=3000, node_color="lightblue", arrows=True, ax=ax)
-labels = nx.get_edge_attributes(G, 'weight')
-nx.draw_networkx_edge_labels(G, pos=positions, edge_labels=labels, ax=ax)
-plt.title("Country-Level Internal and External Flows")
-plt.axis('off')
-plt.tight_layout()
-plt.savefig("country_flow_fixed_layout.png")
-
-# Display in Streamlit
-st.set_page_config(page_title="Country Flow Diagram", layout="wide")
-st.title("Country-Level Internal and External Flows")
-st.image("country_flow_fixed_layout.png", caption="Fixed Layout of Country Flows")
-
-
 
 
 
