@@ -821,6 +821,62 @@ with st.expander("Show filtered data"):
 
 
 
+import plotly.graph_objects as go
+
+# Create Sankey diagram components
+labels = list(pd.unique(merged[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()))
+label_to_index = {label: i for i, label in enumerate(labels)}
+
+sources = []
+targets = []
+values = []
+
+# Flow from Factory today to Plan Lead Factory
+flow1 = merged.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
+for _, row in flow1.iterrows():
+    sources.append(label_to_index[row["Factory today"]])
+    targets.append(label_to_index[row["Plan Lead Factory"]])
+    values.append(row["lead_vol"])
+
+# Flow from Plan Lead Factory to Plan Sub Factory
+flow2 = merged.groupby(["Plan Lead Factory", "Plan Sub Factory"])["sub_vol"].sum().reset_index()
+for _, row in flow2.iterrows():
+    sources.append(label_to_index[row["Plan Lead Factory"]])
+    targets.append(label_to_index[row["Plan Sub Factory"]])
+    values.append(row["sub_vol"])
+
+# Create animated Sankey diagram
+fig = go.Figure(data=[go.Sankey(
+    arrangement="snap",
+    node=dict(
+        pad=15,
+        thickness=20,
+        line=dict(color="black", width=0.5),
+        label=labels,
+        color="blue"
+    ),
+    link=dict(
+        source=sources,
+        target=targets,
+        value=values,
+        color="rgba(255, 153, 51, 0.6)",
+        hovertemplate="%{source.label} → %{target.label}<br>Volume: %{value}<extra></extra>"
+    )
+)])
+
+fig.update_layout(
+    title_text="Animated Factory Volume Flow",
+    font_size=10,
+    transition=dict(duration=500, easing="cubic-in-out")
+)
+
+# Show the diagram
+fig.show()
+
+
+
+
+
 
 
 
