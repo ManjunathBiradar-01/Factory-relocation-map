@@ -825,8 +825,8 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Factory Flow Sankey", layout="wide")
-st.title("Factory Volume Flow: Main → Lead → Sub")
+st.set_page_config(page_title="Country-Level Factory Flow", layout="wide")
+st.title("Country-Level Volume Flow: Main → Lead → Sub")
 
 # Load Excel file
 file_path = "Footprint_SDR.xlsx"
@@ -834,48 +834,42 @@ df_from = pd.read_excel(file_path, sheet_name="From", engine="openpyxl")
 df_to = pd.read_excel(file_path, sheet_name="To", engine="openpyxl")
 df_sub = pd.read_excel(file_path, sheet_name="Sub-Factory", engine="openpyxl")
 
-# Clean column names
-df_from.columns = df_from.columns.str.strip()
-df_to.columns = df_to.columns.str.strip()
-df_sub.columns = df_sub.columns.str.strip()
+# Extract country names from factory locations
+df_from["Main Country"] = df_from["Factory today"].str.split(",").str[-1].str.strip()
+df_to["Lead Country"] = df_to["Plan Lead Factory"].str.split(",").str[-1].str.strip()
+df_sub["Sub Country"] = df_sub["Plan Sub Factory"].str.split(",").str[-1].str.strip()
 
-# Merge factory flow data
-merged = df_from[["FM", "Factory today", "Volume"]].merge(
-    df_to[["FM", "Plan Lead Factory"]], on="FM", how="left"
+# Merge and clean
+merged = df_from[["FM", "Main Country", "Volume"]].merge(
+    df_to[["FM", "Lead Country"]], on="FM", how="left"
 ).merge(
-    df_sub[["FM", "Plan Sub Factory"]], on="FM", how="left"
+    df_sub[["FM", "Sub Country"]], on="FM", how="left"
 )
-
-# Drop incomplete rows
-merged = merged.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
+merged = merged.dropna(subset=["Main Country", "Lead Country", "Sub Country"])
 
 # Aggregate volumes
-main_to_lead = merged.groupby(["Factory today", "Plan Lead Factory"])["Volume"].sum().reset_index()
-lead_to_sub = merged.groupby(["Plan Lead Factory", "Plan Sub Factory"])["Volume"].sum().reset_index()
+main_to_lead = merged.groupby(["Main Country", "Lead Country"])["Volume"].sum().reset_index()
+lead_to_sub = merged.groupby(["Lead Country", "Sub Country"])["Volume"].sum().reset_index()
 
-# Create node list
+# Create node list and mapping
 nodes = pd.Series(pd.concat([
-    main_to_lead["Factory today"],
-    main_to_lead["Plan Lead Factory"],
-    lead_to_sub["Plan Sub Factory"]
+    main_to_lead["Main Country"],
+    main_to_lead["Lead Country"],
+    lead_to_sub["Sub Country"]
 ]).unique())
-
 node_map = {name: i for i, name in enumerate(nodes)}
 
 # Create Sankey links
 links_main_lead = {
-    "source": main_to_lead["Factory today"].map(node_map),
-    "target": main_to_lead["Plan Lead Factory"].map(node_map),
+    "source": main_to_lead["Main Country"].map(node_map),
+    "target": main_to_lead["Lead Country"].map(node_map),
     "value": main_to_lead["Volume"]
 }
-
 links_lead_sub = {
-    "source": lead_to_sub["Plan Lead Factory"].map(node_map),
-    "target": lead_to_sub["Plan Sub Factory"].map(node_map),
+    "source": lead_to_sub["Lead Country"].map(node_map),
+    "target": lead_to_sub["Sub Country"].map(node_map),
     "value": lead_to_sub["Volume"]
 }
-
-# Combine links
 links = {
     "source": pd.concat([links_main_lead["source"], links_lead_sub["source"]]),
     "target": pd.concat([links_main_lead["target"], links_lead_sub["target"]]),
@@ -896,12 +890,10 @@ fig = go.Figure(data=[go.Sankey(
         value=links["value"]
     )
 )])
-
-fig.update_layout(title_text="Volume Flow: Main Factory → Lead → Sub Factory", font_size=10)
+fig.update_layout(title_text="Country-Level Volume Flow: Main → Lead → Sub", font_size=10)
 
 # Display in Streamlit
 st.components.v1.html(fig.to_html(include_plotlyjs='cdn'), height=600, scrolling=True)
-
 
 
 
