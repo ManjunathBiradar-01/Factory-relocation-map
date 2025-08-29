@@ -617,7 +617,7 @@ routes = (
 
 # Lead factory: total main_vol across rows that participate in a positive Sub connection
 lead_by_factory = (
-    df_pos.groupby("Plan Lead Factory", as_index=False)["main_vol"].sum()
+    df_pos.groupby("Plan Lead Factory", as_index=False)["lead_vol"].sum()
 )
 
 # Sub factory: total sub_vol across positive connections
@@ -813,6 +813,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
