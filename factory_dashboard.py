@@ -821,68 +821,81 @@ with st.expander("Show filtered data"):
 
 
 
+import pandas as pd
 import plotly.graph_objects as go
 
-# Ensure required columns exist
-required_cols = ["Factory today", "Plan Lead Factory", "Plan Sub Factory", "lead_vol", "sub_vol"]
-if all(col in filtered_df.columns for col in required_cols):
+# Load the Excel file
+file_path = "Footprint_SDR.xlsx"
+df_from = pd.read_excel(file_path, sheet_name="From", engine="openpyxl")
+df_to = pd.read_excel(file_path, sheet_name="To", engine="openpyxl")
+df_sub = pd.read_excel(file_path, sheet_name="Sub-Factory", engine="openpyxl")
 
-    df_sankey = filtered_df.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
+# Normalize column names
+df_from.columns = df_from.columns.str.strip()
+df_to.columns = df_to.columns.str.strip()
+df_sub.columns = df_sub.columns.str.strip()
 
-    # Include all unique factories, even if volume shifted to itself
-    labels = pd.unique(df_sankey[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()).tolist()
-    label_to_index = {label: i for i, label in enumerate(labels)}
+# Merge relevant columns
+merged = df_from[["FM", "Factory today", "Volume"]].merge(
+    df_to[["FM", "Plan Lead Factory"]], on="FM", how="left"
+).merge(
+    df_sub[["FM", "Plan Sub Factory"]], on="FM", how="left"
+)
 
-    sources = []
-    targets = []
-    values = []
-    colors = []
+# Drop rows with missing factory names
+merged = merged.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
 
-    # Lead shift: Factory today → Plan Lead Factory
-    flow1 = df_sankey.groupby(["Factory today", "Plan Lead Factory"])["lead_vol"].sum().reset_index()
-    for _, row in flow1.iterrows():
-        sources.append(label_to_index[row["Factory today"]])
-        targets.append(label_to_index[row["Plan Lead Factory"]])
-        values.append(row["lead_vol"])
-        colors.append("rgba(0, 128, 255, 0.6)")  # Blue
+# Create source-target-volume triplets
+main_to_lead = merged.groupby(["Factory today", "Plan Lead Factory"])["Volume"].sum().reset_index()
+lead_to_sub = merged.groupby(["Plan Lead Factory", "Plan Sub Factory"])["Volume"].sum().reset_index()
 
-    # Sub shift: Plan Lead Factory → Plan Sub Factory
-    flow2 = df_sankey.groupby(["Plan Lead Factory", "Plan Sub Factory"])["sub_vol"].sum().reset_index()
-    for _, row in flow2.iterrows():
-        sources.append(label_to_index[row["Plan Lead Factory"]])
-        targets.append(label_to_index[row["Plan Sub Factory"]])
-        values.append(row["sub_vol"])
-        colors.append("rgba(255, 102, 0, 0.6)")  # Orange
+# Create node list
+nodes = pd.Series(pd.concat([
+    main_to_lead["Factory today"],
+    main_to_lead["Plan Lead Factory"],
+    lead_to_sub["Plan Sub Factory"]
+]).unique())
 
-    fig = go.Figure(data=[go.Sankey(
-        arrangement="snap",
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="black", width=0.5),
-            label=labels,
-            color="blue"
-        ),
-        link=dict(
-            source=sources,
-            target=targets,
-            value=values,
-            color=colors,
-            hovertemplate="%{source.label} → %{target.label}<br>Volume: %{value}<extra></extra>"
-        )
-    )])
+# Map node names to indices
+node_map = {name: i for i, name in enumerate(nodes)}
 
-    fig.update_layout(
-        title_text="Factory Volume Flow with Lead & Sub Shifts (Animated)",
-        font_size=10,
-        transition=dict(duration=500, easing="cubic-in-out")
+# Create Sankey links
+links_main_lead = {
+    "source": main_to_lead["Factory today"].map(node_map),
+    "target": main_to_lead["Plan Lead Factory"].map(node_map),
+    "value": main_to_lead["Volume"]
+}
+
+links_lead_sub = {
+    "source": lead_to_sub["Plan Lead Factory"].map(node_map),
+    "target": lead_to_sub["Plan Sub Factory"].map(node_map),
+    "value": lead_to_sub["Volume"]
+}
+
+# Combine links
+links = {
+    "source": pd.concat([links_main_lead["source"], links_lead_sub["source"]]),
+    "target": pd.concat([links_main_lead["target"], links_lead_sub["target"]]),
+    "value": pd.concat([links_main_lead["value"], links_lead_sub["value"]])
+}
+
+# Create Sankey diagram
+fig = go.Figure(data=[go.Sankey(
+    node=dict(
+        pad=15,
+        thickness=20,
+        line=dict(color="black", width=0.5),
+        label=nodes.tolist()
+    ),
+    link=dict(
+        source=links["source"],
+        target=links["target"],
+        value=links["value"]
     )
+)])
 
-    st.plotly_chart(fig, use_container_width=True)
-
-else:
-    st.warning("Required columns for Sankey diagram are missing in filtered_df.")
-
+fig.update_layout(title_text="Volume Flow: Main Factory → Lead → Sub Factory", font_size=10)
+fig.write_html("sankey_factory_flow.html")
 
 
 
