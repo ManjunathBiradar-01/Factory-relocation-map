@@ -660,13 +660,14 @@ for _, r in lead_by_factory.iterrows():
         ].sum()
         sub_vol_txt = f"{sub_vol:,.0f}" if sub_vol > 0 else "n/a"
 
-        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
+        tooltip = f"{f}\nMain Vol: {main_vol_txt}\nLead Vol: {lead_vol_txt}\nSub Vol: {sub_vol_txt}"
         popup = (
-            f"<b>Lead Factory:</b> {f}"
-            f"<br><b>Lead Volume:</b> {lead_vol_txt}"
-            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
-            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-        )
+                f"<b>Lead Factory:</b> {f}"
+                f"<br><b>Main Volume:</b> {main_vol_txt}"
+                f"<br><b>Lead Volume:</b> {lead_vol_txt}"
+                f"<br><b>Sub Volume:</b> {sub_vol_txt}"
+                + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+            )
 
         folium.Marker(
             [lat_lead, lon_lead],
@@ -692,14 +693,14 @@ for _, r in sub_by_factory.iterrows():
         # Check for matching lead factory
         lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(), "lead_vol"].sum()
         lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
-        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
+        tooltip = f"{f}\nMain Vol: {main_vol_txt}\nLead Vol: {lead_vol_txt}\nSub Vol: {sub_vol_txt}"
         popup = (
-            f"<b>Factory:</b> {f}"
-            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
+            f"<b>Sub Factory:</b> {f}"
+            f"<br><b>Main Volume:</b> {main_vol_txt}"
             f"<br><b>Lead Volume:</b> {lead_vol_txt}"
+            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-        )
-
+            )
         folium.Marker(
             [lat_sub, lon_sub],
             tooltip=tooltip,
@@ -818,6 +819,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
