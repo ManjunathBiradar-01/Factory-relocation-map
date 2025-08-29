@@ -821,7 +821,29 @@ with st.expander("Show filtered data"):
 
 
 
+import pandas as pd
 import plotly.graph_objects as go
+
+# Load your Excel file
+df_from = pd.read_excel("Footprint_SDR.xlsx", sheet_name="From", engine="openpyxl")
+df_to = pd.read_excel("Footprint_SDR.xlsx", sheet_name="To", engine="openpyxl")
+df_sub = pd.read_excel("Footprint_SDR.xlsx", sheet_name="Sub-Factory", engine="openpyxl")
+
+# Normalize column names
+for df in [df_from, df_to, df_sub]:
+    df.columns = df.columns.str.strip()
+
+# Rename volume columns
+df_from = df_from.rename(columns={"Volume": "main_vol"})
+df_to = df_to.rename(columns={"Volume": "lead_vol"})
+df_sub = df_sub.rename(columns={"Volume": "sub_vol"})
+
+# Merge all data into one DataFrame
+merged = df_from.merge(df_to[["FM", "Plan Lead Factory", "lead_vol"]], on="FM", how="left")
+merged = merged.merge(df_sub[["FM", "Plan Sub Factory", "sub_vol"]], on="FM", how="left")
+
+# Drop rows with missing factory names
+merged = merged.dropna(subset=["Factory today", "Plan Lead Factory", "Plan Sub Factory"])
 
 # Create Sankey diagram components
 labels = list(pd.unique(merged[["Factory today", "Plan Lead Factory", "Plan Sub Factory"]].values.ravel()))
@@ -870,7 +892,6 @@ fig.update_layout(
     transition=dict(duration=500, easing="cubic-in-out")
 )
 
-# Show the diagram
 fig.show()
 
 
