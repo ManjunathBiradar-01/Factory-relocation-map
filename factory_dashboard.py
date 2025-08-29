@@ -644,6 +644,8 @@ lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.stri
 sub_factories_clean = sub_by_factory["Plan Sub Factory"].astype(str).str.strip().str.lower()
 
 # === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
+lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
+
 for _, r in sub_by_factory.iterrows():
     f = str(r["Plan Sub Factory"]).strip()
     if f in coords_sub:
@@ -653,10 +655,10 @@ for _, r in sub_by_factory.iterrows():
         sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
 
 
-        print("lead_by_factory columns:", lead_by_factory.columns.tolist())
+        # print("lead_by_factory columns:", lead_by_factory.columns.tolist())
 
-        # Get lead volume for this sub factory
-        lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(),"lead_vol"].sum()
+        # Check for matching lead factory
+        lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(), "lead_vol"].sum()
         lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
 
         tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
@@ -812,6 +814,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
