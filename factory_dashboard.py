@@ -685,29 +685,29 @@ for _, r in sub_by_factory.iterrows():
         lat_sub = coords_sub[f]["Lat_sub"]
         lon_sub = coords_sub[f]["Lon_sub"]
         sub_vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
+
+        # Lookup main and lead volumes from merged summary
+        vol_row = summary[summary["Plan Sub Factory"] == f]
+        main_vol_txt = f"{vol_row['main_vol'].values[0]:,.0f}" if not vol_row.empty else "n/a"
+        lead_vol_txt = f"{vol_row['lead_vol'].values[0]:,.0f}" if not vol_row.empty else "n/a"
+
         sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
 
-
-        # print("lead_by_factory columns:", lead_by_factory.columns.tolist())
-
-        # Check for matching lead factory
-        lead_vol = lead_by_factory.loc[lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower() == f.lower(), "lead_vol"].sum()
-        lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
         tooltip = f"{f}\nMain Vol: {main_vol_txt}\nLead Vol: {lead_vol_txt}\nSub Vol: {sub_vol_txt}"
         popup = (
-            f"<b>Sub Factory:</b> {f}"
+            f"<b>Factory:</b> {f}"
             f"<br><b>Main Volume:</b> {main_vol_txt}"
             f"<br><b>Lead Volume:</b> {lead_vol_txt}"
             f"<br><b>Sub Volume:</b> {sub_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-            )
+        )
+
         folium.Marker(
             [lat_sub, lon_sub],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
             icon=folium.Icon(color="red", icon="industry", prefix="fa")
         ).add_to(m)
-
 
 
 
@@ -819,6 +819,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
