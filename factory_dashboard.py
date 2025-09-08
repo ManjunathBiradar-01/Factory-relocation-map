@@ -548,7 +548,42 @@ merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vo
 
 # Display the final merged table
 st.markdown("### Combined Factory Summary")
-st.dataframe(merged_df)
+# Apply styling and remove index
+styled_html = merged_df.style.set_table_styles([
+    {
+        'selector': 'th',
+        'props': [
+            ('background-color', '#34495e'),
+            ('color', 'white'),
+            ('font-size', '16px'),
+            ('font-family', 'Arial'),
+            ('font-weight', 'bold'),
+            ('text-align', 'center')
+        ]
+    },
+    {
+        'selector': 'td',
+        'props': [
+            ('font-size', '16px'),
+            ('font-family', 'Courier New'),
+            ('background-color', '#f9f9f9')
+        ]
+    }
+]).hide(axis="index").to_html()
+
+# Wrap table in a centered div with width control
+centered_html = f"""
+<div style="text-align: center;">
+    <div style="display: inline-block; width: 900px;">
+        {styled_html}
+    </div>
+</div>
+"""
+
+# Display the styled and centered table
+st.markdown("### Combined Factory Summary", unsafe_allow_html=True)
+st.markdown(centered_html, unsafe_allow_html=True)
+
 
 
 #2nd map 
@@ -845,6 +880,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
