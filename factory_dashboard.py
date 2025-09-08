@@ -526,7 +526,8 @@ st.components.v1.html(m._repr_html_(), height=400)
 # === Volume by Each Factory ===
 st.markdown("### Volume by Each Factory")
 
-# Assuming filtered_df is already defined and contains the necessary columns
+# Sample filtered_df for demonstration (replace with your actual DataFrame)
+# filtered_df = pd.read_csv("your_data.csv")
 
 # Summarize volumes by factory type
 lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
@@ -546,31 +547,38 @@ merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
 merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
-# ✅ Apply custom styling
-styled_df = merged_df.style.set_table_styles([
-    {
-        'selector': 'th',
-        'props': [
-            ('background-color', '#34495e'),
-            ('color', 'white'),
-            ('font-size', '16px'),
-            ('font-family', 'Arial'),
-            ('font-weight', 'bold')
-        ]
-    },
-    {
-        'selector': 'td',
-        'props': [
-            ('font-size', '14px'),
-            ('font-family', 'Courier New'),
-            ('background-color', '#f9f9f9')
-        ]
-    }
-])
+# Convert DataFrame to HTML
+html_table = merged_df.to_html(index=False)
 
-# ✅ Display the styled dataframe
-st.markdown("### Combined Factory Summary")
-st.dataframe(styled_df)
+# Custom CSS for header styling
+custom_css = """
+<style>
+    table {
+        font-family: Courier New;
+        font-size: 14px;
+        background-color: #f9f9f9;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th {
+        background-color: #34495e;
+        color: white;
+        font-size: 16px;
+        font-family: Arial;
+        font-weight: bold;
+        padding: 8px;
+        text-align: left;
+    }
+    td {
+        padding: 8px;
+        border: 1px solid #ddd;
+    }
+</style>
+"""
+
+# Display styled table
+st.markdown("### Combined Factory Summary", unsafe_allow_html=True)
+st.markdown(custom_css + html_table, unsafe_allow_html=True)
 
 
 #2nd map 
@@ -867,6 +875,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
