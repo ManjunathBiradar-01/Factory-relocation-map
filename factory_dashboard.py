@@ -696,36 +696,33 @@ folium.Marker(
 
 # === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
 # Use GLOBAL (Map-1) "lead_vol by Sub" for consistency
-    f_clean = normalize_factory_name(f)
-    global_lead_into_sub = sub_lead_totals_global.loc[
-        sub_lead_totals_global["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean,
-        "lead_vol"
-    ].sum()
+f_clean = normalize_factory_name(f)
+global_lead_into_sub = sub_lead_totals_global.loc[
+    sub_lead_totals_global["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean,
+    "lead_vol"].sum()
 
-    lead_vol_txt = f"{global_lead_into_sub:,.0f}" if global_lead_into_sub > 0 else "n/a"
-
-
-        # print("lead_by_factory columns:", lead_by_factory.columns.tolist())
+lead_vol_txt = f"{global_lead_into_sub:,.0f}" if global_lead_into_sub > 0 else "n/a"
+    
 
         # Check for matching lead factory
-        f_clean = normalize_factory_name(f)
-        lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
+f_clean = normalize_factory_name(f)
+lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
 
-        lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
-        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
-        popup = (
-            f"<b>Factory:</b> {f}"
-            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
-            f"<br><b>Lead Volume:</b> {lead_vol_txt}"
-            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-        )
+lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
+tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
+popup = (
+    f"<b>Factory:</b> {f}"
+    f"<br><b>Sub Volume:</b> {sub_vol_txt}"
+    f"<br><b>Lead Volume:</b> {lead_vol_txt}"
+    + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+    )
 
-        folium.Marker(
-            [lat_sub, lon_sub],
-            tooltip=tooltip,
-            popup=folium.Popup(popup, max_width=320),
-            icon=folium.Icon(color="red", icon="industry", prefix="fa")
-        ).add_to(m)
+folium.Marker(
+    [lat_sub, lon_sub],
+    tooltip=tooltip,
+    popup=folium.Popup(popup, max_width=320),
+    icon=folium.Icon(color="red", icon="industry", prefix="fa")
+).add_to(m)
 
 
 
@@ -840,6 +837,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
