@@ -562,13 +562,13 @@ custom_css = """
         width: 100%;
     }
     th {
-        background-color: #0052a0;
-        color: white;
+        background-color: #ffdc43;
+        color: black;
         font-size: 16px;
         font-family: Arial;
         font-weight: bold;
         padding: 8px;
-        text-align: left;
+        text-align: center;
     }
     td {
         padding: 8px;
@@ -876,6 +876,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
