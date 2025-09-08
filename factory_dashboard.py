@@ -663,7 +663,7 @@ lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.stri
 sub_factories_clean = sub_by_factory["Plan Sub Factory"].astype(str).str.strip().str.lower()
 
 
-# === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
+# === 3) 'Lead' factory markers once each (aggregated lead_vol) ===
 for _, r in lead_by_factory.iterrows():
     f = str(r["Plan Lead Factory"]).strip()
     if f in coords_lead:
@@ -693,7 +693,7 @@ for _, r in lead_by_factory.iterrows():
             icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
 
-# === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
+# === 4) 'Sub' factory markers once each (aggregated sub_vol) ===
 lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
 
 for _, r in sub_by_factory.iterrows():
@@ -709,7 +709,7 @@ for _, r in sub_by_factory.iterrows():
 
         # Check for matching lead factory
         f_clean = normalize_factory_name(f)
-        lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
+        lead_vol = df_pos.loc[df_pos["Plan lead Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
 
         lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
         tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
@@ -838,6 +838,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
