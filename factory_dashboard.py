@@ -546,7 +546,7 @@ merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
 merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
-# Apply custom styling to the dataframe
+# ✅ Apply custom styling
 styled_df = merged_df.style.set_table_styles([
     {
         'selector': 'th',
@@ -568,13 +568,9 @@ styled_df = merged_df.style.set_table_styles([
     }
 ])
 
-# Display the styled dataframe
+# ✅ Display the styled dataframe
 st.markdown("### Combined Factory Summary")
 st.dataframe(styled_df)
-
-# Display the final merged table
-st.markdown("### Combined Factory Summary")
-st.dataframe(merged_df)
 
 
 #2nd map 
@@ -871,6 +867,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
