@@ -526,11 +526,7 @@ st.components.v1.html(m._repr_html_(), height=400)
 # === Volume by Each Factory ===
 st.markdown("### Volume by Each Factory")
 
-# Sample filtered_df for demonstration (replace with your actual DataFrame)
-# filtered_df = pd.read_csv("your_data.csv")
-
-import pandas as pd
-import streamlit as st
+# Assuming filtered_df is already defined and contains the necessary columns
 
 # Summarize volumes by factory type
 lead_summary = filtered_df.groupby("Plan Lead Factory")["lead_vol"].sum().reset_index()
@@ -550,38 +546,9 @@ merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
 merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
-# Apply styling and remove index
-styled_html = merged_df.style.set_table_styles([
-    {
-        'selector': 'th',
-        'props': [
-            ('background-color', '#34495e'),
-            ('color', 'white'),
-            ('font-size', '16px'),
-            ('font-family', 'Arial'),
-            ('font-weight', 'bold'),
-            ('text-align', 'center')
-        ]
-    },
-    {
-        'selector': 'td',
-        'props': [
-            ('font-size', '16px'),
-            ('font-family', 'Courier New'),
-            ('background-color', '#f9f9f9')
-        ]
-    }
-]).hide(axis="index").to_html()
-
-centered_html = f"""
-<div style="text-align: center;">
-    <div style="display: inline-block; width: 100%; max-width: 1000px;">
-        {styled_html}
-    </div>
-
-# Display the styled and centered table
-st.markdown("### Combined Factory Summary", unsafe_allow_html=True)
-st.markdown(centered_html, unsafe_allow_html=True)
+# Display the final merged table
+st.markdown("### Combined Factory Summary")
+st.dataframe(merged_df)
 
 
 #2nd map 
@@ -878,6 +845,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
