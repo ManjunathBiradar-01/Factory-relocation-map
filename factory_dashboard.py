@@ -664,72 +664,68 @@ sub_factories_clean = sub_by_factory["Plan Sub Factory"].astype(str).str.strip()
 
 
 # === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
-# Use GLOBAL (Map-1) lead totals for consistent Lead Vol
-f_clean = normalize_factory_name(f)
-global_lead_total = lead_totals_global.loc[
-    lead_totals_global["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean,
-    "lead_vol"].sum()
-
-lead_vol_txt = f"{global_lead_total:,.0f}" if global_lead_total > 0 else "n/a"
-
+for _, r in lead_by_factory.iterrows():
+    f = str(r["Plan Lead Factory"]).strip()
+    if f in coords_lead:
+        lat_lead = coords_lead[f]["Lat_lead"]
+        lon_lead = coords_lead[f]["Lon_lead"]
+        lead_vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
+        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
 
         # Get sub volume for this lead factory
-f_clean = normalize_factory_name(f)
-sub_vol = df_pos.loc[df_pos["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean, "sub_vol"].sum()
+        f_clean = normalize_factory_name(f)
+        sub_vol = df_pos.loc[df_pos["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean, "sub_vol"].sum()
 
-sub_vol_txt = f"{sub_vol:,.0f}" if sub_vol > 0 else "n/a"
+        sub_vol_txt = f"{sub_vol:,.0f}" if sub_vol > 0 else "n/a"
 
-tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
-popup = (
-        f"<b>Lead Factory:</b> {f}"
-        f"<br><b>Lead Volume:</b> {lead_vol_txt}"
-        f"<br><b>Sub Volume:</b> {sub_vol_txt}"
-        + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-    )
+        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
+        popup = (
+            f"<b>Lead Factory:</b> {f}"
+            f"<br><b>Lead Volume:</b> {lead_vol_txt}"
+            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+        )
 
-folium.Marker(
-        [lat_lead, lon_lead],
-        tooltip=tooltip,
-        popup=folium.Popup(popup, max_width=320),
-        icon=folium.Icon(color="blue", icon="flag", prefix="fa")
+        folium.Marker(
+            [lat_lead, lon_lead],
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
+            icon=folium.Icon(color="blue", icon="flag", prefix="fa")
         ).add_to(m)
 
 # === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
-# Use GLOBAL (Map-1) "lead_vol by Sub" for consistency
-f_clean = normalize_factory_name(f)
-global_lead_into_sub = sub_lead_totals_global.loc[
-    sub_lead_totals_global["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean,
-    "lead_vol"].sum()
+lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
 
-lead_vol_txt = f"{global_lead_into_sub:,.0f}" if global_lead_into_sub > 0 else "n/a"
-    
+for _, r in sub_by_factory.iterrows():
+    f = str(r["Plan Sub Factory"]).strip()
+    if f in coords_sub:
+        lat_sub = coords_sub[f]["Lat_sub"]
+        lon_sub = coords_sub[f]["Lon_sub"]
+        sub_vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
+        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
+
+
+        # print("lead_by_factory columns:", lead_by_factory.columns.tolist())
 
         # Check for matching lead factory
-f_clean = normalize_factory_name(f)
-lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
+        f_clean = normalize_factory_name(f)
+        lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
 
-lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
-tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
-popup = (
-    f"<b>Factory:</b> {f}"
-    f"<br><b>Sub Volume:</b> {sub_vol_txt}"
-    f"<br><b>Lead Volume:</b> {lead_vol_txt}"
-    + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
-    )
+        lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
+        tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
+        popup = (
+            f"<b>Factory:</b> {f}"
+            f"<br><b>Sub Volume:</b> {sub_vol_txt}"
+            f"<br><b>Lead Volume:</b> {lead_vol_txt}"
+            + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
+        )
 
-if f in coords_sub:
-    lat_sub = coords_sub[f]["Lat_sub"]
-    lon_sub = coords_sub[f]["Lon_sub"]
-
-
-    folium.Marker(
-        [lat_sub, lon_sub],
-        tooltip=tooltip,
-        popup=folium.Popup(popup, max_width=320),
-        icon=folium.Icon(color="red", icon="industry", prefix="fa")
-    ).add_to(m)
-
-
+        folium.Marker(
+            [lat_sub, lon_sub],
+            tooltip=tooltip,
+            popup=folium.Popup(popup, max_width=320),
+            icon=folium.Icon(color="red", icon="industry", prefix="fa")
+        ).add_to(m)
 
 
 
@@ -842,6 +838,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
