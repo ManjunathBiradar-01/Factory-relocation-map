@@ -560,7 +560,7 @@ df_pos = filtered_df[
     & filtered_df["Plan Lead Factory"].notna()
     & pd.notnull(filtered_df["Lat_lead"]) & pd.notnull(filtered_df["Lon_lead"])
     & pd.notnull(filtered_df["Lat_sub"])  & pd.notnull(filtered_df["Lon_sub"])
-    & (filtered_df["sub_vol"] > 0)
+    & (filtered_df["sub_vol"])
 ].copy()
 
 # If nothing to draw, exit gracefully
@@ -839,6 +839,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
