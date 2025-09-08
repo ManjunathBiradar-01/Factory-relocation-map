@@ -547,8 +547,9 @@ merged_df = pd.merge(merged_df, sub_summary, on="Factory", how="outer")
 merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
-# ✅ Apply custom styling
-styled_df = merged_df.style.set_table_styles([
+
+# Convert styled DataFrame to HTML without index
+styled_html = merged_df.style.set_table_styles([
     {
         'selector': 'th',
         'props': [
@@ -556,22 +557,23 @@ styled_df = merged_df.style.set_table_styles([
             ('color', 'white'),
             ('font-size', '16px'),
             ('font-family', 'Arial'),
-            ('font-weight', 'bold')
+            ('font-weight', 'bold'),
+            ('text-align', 'center')  # Center align header
         ]
     },
     {
         'selector': 'td',
         'props': [
-            ('font-size', '14px'),
+            ('font-size', '16px'),
             ('font-family', 'Courier New'),
             ('background-color', '#f9f9f9')
         ]
     }
-])
+]).hide(axis="index").to_html()
 
-# ✅ Display the styled dataframe
-st.markdown("### Combined Factory Summary")
-st.dataframe(styled_df)
+# Display the styled HTML table
+st.markdown("### Combined Factory Summary", unsafe_allow_html=True)
+st.markdown(styled_html, unsafe_allow_html=True)
 
 #2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
@@ -867,6 +869,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
