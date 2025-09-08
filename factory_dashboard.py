@@ -524,8 +524,6 @@ st.components.v1.html(m._repr_html_(), height=400)
 
 
 # === Volume by Each Factory ===
-st.markdown("### Volume by Each Factory")
-
 # Assuming filtered_df is already defined and contains the necessary columns
 
 # Summarize volumes by factory type
@@ -547,7 +545,7 @@ merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
 # Display the final merged table
-st.markdown("### Combined Factory Summary")
+st.markdown("###Factory Summary")
 st.dataframe(merged_df)
 
 
@@ -846,6 +844,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
