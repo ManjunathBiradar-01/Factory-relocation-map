@@ -706,7 +706,7 @@ lead_vol_txt = f"{global_lead_into_sub:,.0f}" if global_lead_into_sub > 0 else "
 
         # Check for matching lead factory
 f_clean = normalize_factory_name(f)
-lead_vol = global_lead_into_sub
+lead_vol = df_pos.loc[df_pos["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
 
 lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
 tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
@@ -717,16 +717,12 @@ popup = (
     + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
     )
 
-if f in coords_sub:
-    lat_sub = coords_sub[f]["Lat_sub"]
-    lon_sub = coords_sub[f]["Lon_sub"]
-    
-    folium.Marker(
-        [lat_sub, lon_sub],
-        tooltip=tooltip,
-        popup=folium.Popup(popup, max_width=320),
-        icon=folium.Icon(color="red", icon="industry", prefix="fa")
-    ).add_to(m)
+folium.Marker(
+    [lat_sub, lon_sub],
+    tooltip=tooltip,
+    popup=folium.Popup(popup, max_width=320),
+    icon=folium.Icon(color="red", icon="industry", prefix="fa")
+).add_to(m)
 
 
 # === 5) Draw each route once with summed sub_vol ===
@@ -837,6 +833,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
