@@ -665,13 +665,12 @@ sub_factories_clean = sub_by_factory["Plan Sub Factory"].astype(str).str.strip()
 
 # === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
 # Use GLOBAL (Map-1) lead totals for consistent Lead Vol
-    f_clean = normalize_factory_name(f)
-    global_lead_total = lead_totals_global.loc[
-        lead_totals_global["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean,
-        "lead_vol"
-    ].sum()
+f_clean = normalize_factory_name(f)
+global_lead_total = lead_totals_global.loc[
+    lead_totals_global["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean,
+    "lead_vol"].sum()
 
-    lead_vol_txt = f"{global_lead_total:,.0f}" if global_lead_total > 0 else "n/a"
+lead_vol_txt = f"{global_lead_total:,.0f}" if global_lead_total > 0 else "n/a"
 
 
         # Get sub volume for this lead factory
@@ -841,6 +840,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
