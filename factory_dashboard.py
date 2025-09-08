@@ -550,7 +550,7 @@ styled_html = merged_df.style.set_table_styles([
     {
         'selector': 'th',
         'props': [
-            ('background-color', 'white'),
+            ('background-color', '#f9f9f9'),
             ('color', 'black'),
             ('font-size', '16px'),
             ('font-family', 'Arial'),
@@ -561,9 +561,9 @@ styled_html = merged_df.style.set_table_styles([
     {
         'selector': 'td',
         'props': [
-            ('font-size', '16px'),
-            ('font-family', 'Courier New'),
-            ('background-color', '#f9f9f9')
+            ('font-size', '14px'),
+            ('font-family', 'Arial'),
+            ('background-color', 'white')
         ]
     }
 ]).hide(axis="index").to_html()
@@ -866,6 +866,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
