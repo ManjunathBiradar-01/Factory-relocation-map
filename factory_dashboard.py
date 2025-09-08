@@ -578,8 +578,6 @@ centered_html = f"""
     <div style="display: inline-block; width: 100%; max-width: 1000px;">
         {styled_html}
     </div>
-</div>
-"""
 
 # Display the styled and centered table
 st.markdown("### Combined Factory Summary", unsafe_allow_html=True)
@@ -880,6 +878,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
