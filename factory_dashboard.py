@@ -545,7 +545,7 @@ merged_df = merged_df.fillna(0)
 merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vol", "sub_vol"]].astype(int)
 
 # Display the final merged table
-st.markdown("###Factory Summary")
+st.markdown("###  Factory Summary")
 st.dataframe(merged_df)
 
 
@@ -844,6 +844,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
