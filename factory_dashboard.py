@@ -722,12 +722,12 @@ if f in coords_sub:
     lon_sub = coords_sub[f]["Lon_sub"]
 
 
-folium.Marker(
-    [lat_sub, lon_sub],
-    tooltip=tooltip,
-    popup=folium.Popup(popup, max_width=320),
-    icon=folium.Icon(color="red", icon="industry", prefix="fa")
-).add_to(m)
+    folium.Marker(
+        [lat_sub, lon_sub],
+        tooltip=tooltip,
+        popup=folium.Popup(popup, max_width=320),
+        icon=folium.Icon(color="red", icon="industry", prefix="fa")
+    ).add_to(m)
 
 
 
@@ -842,6 +842,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
