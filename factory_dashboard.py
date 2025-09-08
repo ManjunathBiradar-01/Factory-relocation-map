@@ -553,7 +553,7 @@ html_table = merged_df.to_html(index=False)
 # Custom CSS for header styling
 custom_css = """
 <style>
-    table {
+    .styled-table {
         font-family: Courier New;
         font-size: 14px;
         color: black;
@@ -561,16 +561,16 @@ custom_css = """
         border-collapse: collapse;
         width: 100%;
     }
-    th {
+    .styled-table th {
         background-color: white;
         color: black;
         font-size: 16px;
         font-family: Arial;
         font-weight: bold;
         padding: 8px;
-        text-align: right;
+        text-align: center;
     }
-    td {
+    .styled-table td {
         padding: 8px;
         border: 1px solid #ddd;
     }
@@ -876,6 +876,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
