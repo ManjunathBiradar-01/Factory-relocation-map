@@ -551,21 +551,6 @@ st.markdown("### Combined Factory Summary")
 st.dataframe(merged_df)
 
 
-# --- Save GLOBAL lead totals from the same filtered_df used on Map 1 ---
-lead_totals_global = (
-    filtered_df.dropna(subset=["Plan Lead Factory"])
-               .groupby("Plan Lead Factory", as_index=False)["lead_vol"]
-               .sum()
-)
-
-# Optional: also compute "lead_vol by Sub" (to show on Sub markers in Map 2)
-sub_lead_totals_global = (
-    filtered_df.dropna(subset=["Plan Sub Factory"])
-               .groupby("Plan Sub Factory", as_index=False)["lead_vol"]
-               .sum()
-)
-
-
 #2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
 filtered_df = filtered_df.copy()
@@ -860,6 +845,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
