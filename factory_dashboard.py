@@ -224,14 +224,14 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .kpi-title {
-        font-size: 18px;
+        font-size: 15px;
         font-weight: bold;
         color: #2c3e50;
     }
     .kpi-value {
         font-size: 26px;
         font-weight: bolder;
-        color: #ffdc43
+        color: #e67e22
         font-family: 'Roboto', monospace;
     }
     </style>
@@ -270,22 +270,6 @@ with kpi_sub:
         </div>
     """, unsafe_allow_html=True)
 
-
-# Volume by factory type
-st.markdown("### Volume by Factory Type")
-kpi_main, kpi_lead, kpi_sub = st.columns(3)
-
-with kpi_main:
-    st.metric("Main Factories", filtered_df["Factory today"].nunique())
-    st.metric("Main Volume", f"{filtered_df['main_vol'].sum():,.0f}")
-
-with kpi_lead:
-    st.metric("Lead Factories", filtered_df["Plan Lead Factory"].nunique())
-    st.metric("Lead Volume", f"{filtered_df['lead_vol'].sum():,.0f}")
-
-with kpi_sub:
-    st.metric("Sub Factories", filtered_df["Plan Sub Factory"].nunique())
-    st.metric("Sub Volume", f"{filtered_df['sub_vol'].sum():,.0f}")
 
 
 import folium
@@ -876,6 +860,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
