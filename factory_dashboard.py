@@ -717,8 +717,8 @@ popup = (
     + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
     )
 
-lat_sub = coords_sub["Lat_sub"]
-lon_sub = coords_sub["Lon_sub"]
+lat_sub = coords_sub[f]["Lat_sub"]
+lon_sub = coords_sub[f]["Lon_sub"]
 
 folium.Marker(
     [lat_sub, lon_sub],
@@ -836,6 +836,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
