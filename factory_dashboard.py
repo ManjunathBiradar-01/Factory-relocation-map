@@ -573,10 +573,9 @@ styled_html = merged_df.style.set_table_styles([
     }
 ]).hide(axis="index").to_html()
 
-# Wrap table in a centered div
 centered_html = f"""
 <div style="text-align: center;">
-    <div style="display: inline-block;">
+    <div style="display: inline-block; width: 100%; max-width: 1000px;">
         {styled_html}
     </div>
 </div>
@@ -881,6 +880,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
