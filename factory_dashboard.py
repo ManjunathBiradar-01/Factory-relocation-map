@@ -674,20 +674,20 @@ lead_vol_txt = f"{global_lead_total:,.0f}" if global_lead_total > 0 else "n/a"
 
 
         # Get sub volume for this lead factory
-        f_clean = normalize_factory_name(f)
-        sub_vol = df_pos.loc[df_pos["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean, "sub_vol"].sum()
+    f_clean = normalize_factory_name(f)
+    sub_vol = df_pos.loc[df_pos["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean, "sub_vol"].sum()
 
-        sub_vol_txt = f"{sub_vol:,.0f}" if sub_vol > 0 else "n/a"
+    sub_vol_txt = f"{sub_vol:,.0f}" if sub_vol > 0 else "n/a"
 
-        tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
-        popup = (
+    tooltip = f"{f} | Lead Vol: {lead_vol_txt} | Sub Vol: {sub_vol_txt}"
+    popup = (
             f"<b>Lead Factory:</b> {f}"
             f"<br><b>Lead Volume:</b> {lead_vol_txt}"
             f"<br><b>Sub Volume:</b> {sub_vol_txt}"
             + (f"<br><b>Sales Region:</b> {sr}" if sales_region_col else "")
         )
 
-        folium.Marker(
+    folium.Marker(
             [lat_lead, lon_lead],
             tooltip=tooltip,
             popup=folium.Popup(popup, max_width=320),
@@ -840,6 +840,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
