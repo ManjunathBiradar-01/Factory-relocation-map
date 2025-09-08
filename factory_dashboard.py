@@ -211,23 +211,65 @@ India = "Pune, India"
 
 
 
-# Inject custom CSS for KPI styling
+# Custom CSS for KPI cards
 st.markdown("""
     <style>
-    div[data-testid="metric"] > label {
-        font-family: 'Arial';
+    .kpi-card {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        font-family: 'Arial', sans-serif;
+        margin-bottom: 20px;
+    }
+    .kpi-title {
         font-size: 18px;
         font-weight: bold;
-        color: #34495e;
+        color: #2c3e50;
     }
-    div[data-testid="metric"] > div {
-        font-family: 'Courier New';
-        font-size: 22px;
-        font-weight: 600;
+    .kpi-value {
+        font-size: 26px;
+        font-weight: 700;
         color: #e67e22;
+        font-family: 'Courier New', monospace;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Layout for KPI cards
+kpi_main, kpi_lead, kpi_sub = st.columns(3)
+
+with kpi_main:
+    st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-title">Main Factories</div>
+            <div class="kpi-value">{filtered_df["Factory today"].nunique()}</div>
+            <div class="kpi-title">Main Volume</div>
+            <div class="kpi-value">{filtered_df['main_vol'].sum():,.0f}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with kpi_lead:
+    st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-title">Lead Factories</div>
+            <div class="kpi-value">{filtered_df["Plan Lead Factory"].nunique()}</div>
+            <div class="kpi-title">Lead Volume</div>
+            <div class="kpi-value">{filtered_df['lead_vol'].sum():,.0f}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with kpi_sub:
+    st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-title">Sub Factories</div>
+            <div class="kpi-value">{filtered_df["Plan Sub Factory"].nunique()}</div>
+            <div class="kpi-title">Sub Volume</div>
+            <div class="kpi-value">{filtered_df['sub_vol'].sum():,.0f}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 # Volume by factory type
 st.markdown("### Volume by Factory Type")
@@ -834,6 +876,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
