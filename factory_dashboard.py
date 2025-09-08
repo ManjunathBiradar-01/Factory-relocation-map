@@ -525,6 +525,19 @@ st.markdown("### Combined Factory Summary")
 st.dataframe(merged_df)
 
 
+# --- Save GLOBAL lead totals from the same filtered_df used on Map 1 ---
+lead_totals_global = (
+    filtered_df.dropna(subset=["Plan Lead Factory"])
+               .groupby("Plan Lead Factory", as_index=False)["lead_vol"]
+               .sum()
+)
+
+# Optional: also compute "lead_vol by Sub" (to show on Sub markers in Map 2)
+sub_lead_totals_global = (
+    filtered_df.dropna(subset=["Plan Sub Factory"])
+               .groupby("Plan Sub Factory", as_index=False)["lead_vol"]
+               .sum()
+)
 
 
 #2nd map 
@@ -651,13 +664,15 @@ sub_factories_clean = sub_by_factory["Plan Sub Factory"].astype(str).str.strip()
 
 
 # === 4) 'Lead' factory markers once each (aggregated lead_vol) ===
-for _, r in lead_by_factory.iterrows():
-    f = str(r["Plan Lead Factory"]).strip()
-    if f in coords_lead:
-        lat_lead = coords_lead[f]["Lat_lead"]
-        lon_lead = coords_lead[f]["Lon_lead"]
-        lead_vol_txt = f"{r['lead_vol']:,.0f}" if pd.notnull(r["lead_vol"]) else "n/a"
-        sr = region_lead[f] if sales_region_col and f in region_lead.index else "n/a"
+# Use GLOBAL (Map-1) lead totals for consistent Lead Vol
+    f_clean = normalize_factory_name(f)
+    global_lead_total = lead_totals_global.loc[
+        lead_totals_global["Plan Lead Factory"].astype(str).str.strip().str.lower() == f_clean,
+        "lead_vol"
+    ].sum()
+
+    lead_vol_txt = f"{global_lead_total:,.0f}" if global_lead_total > 0 else "n/a"
+
 
         # Get sub volume for this lead factory
         f_clean = normalize_factory_name(f)
@@ -681,15 +696,14 @@ for _, r in lead_by_factory.iterrows():
         ).add_to(m)
 
 # === 3) 'Sub' factory markers once each (aggregated sub_vol) ===
-lead_factories_clean = lead_by_factory["Plan Lead Factory"].astype(str).str.strip().str.lower()
+# Use GLOBAL (Map-1) "lead_vol by Sub" for consistency
+    f_clean = normalize_factory_name(f)
+    global_lead_into_sub = sub_lead_totals_global.loc[
+        sub_lead_totals_global["Plan Sub Factory"].astype(str).str.strip().str.lower() == f_clean,
+        "lead_vol"
+    ].sum()
 
-for _, r in sub_by_factory.iterrows():
-    f = str(r["Plan Sub Factory"]).strip()
-    if f in coords_sub:
-        lat_sub = coords_sub[f]["Lat_sub"]
-        lon_sub = coords_sub[f]["Lon_sub"]
-        sub_vol_txt = f"{r['sub_vol']:,.0f}" if pd.notnull(r["sub_vol"]) else "n/a"
-        sr = region_sub[f] if sales_region_col and f in region_sub.index else "n/a"
+    lead_vol_txt = f"{global_lead_into_sub:,.0f}" if global_lead_into_sub > 0 else "n/a"
 
 
         # print("lead_by_factory columns:", lead_by_factory.columns.tolist())
@@ -827,6 +841,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
