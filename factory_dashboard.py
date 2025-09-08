@@ -546,31 +546,8 @@ merged_df[["main_vol", "lead_vol", "sub_vol"]] = merged_df[["main_vol", "lead_vo
 
 # Display the final merged table
 st.markdown("###  Factory Summary")
-styled_html = merged_df.style.set_table_styles([
-    {
-        'selector': 'table',
-        'props': [('width', '100%')]
-    },
-    {
-        'selector': 'th',
-        'props': [
-            ('background-color', '#34495e'),
-            ('color', 'white'),
-            ('font-size', '16px'),
-            ('font-family', 'Arial'),
-            ('font-weight', 'bold'),
-            ('text-align', 'center')
-        ]
-    },
-    {
-        'selector': 'td',
-        'props': [
-            ('font-size', '16px'),
-            ('font-family', 'Courier New'),
-            ('background-color', '#f9f9f9')
-        ]
-    }
-]).hide(axis="index").to_html()
+st.markdown(merged_df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
+
 
 #2nd map 
 # === 0) Normalize keys & coerce numeric BEFORE any grouping / plotting ===
@@ -866,6 +843,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
