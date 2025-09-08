@@ -709,7 +709,7 @@ for _, r in sub_by_factory.iterrows():
 
         # Check for matching lead factory
         f_clean = normalize_factory_name(f)
-        lead_vol = df_pos.loc[df_pos["Plan sub Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
+        lead_vol = df_pos.loc[df_pos["Plan lead Factory"].astype(str).str.strip().str.lower() == f_clean, "lead_vol"].sum()
 
         lead_vol_txt = f"{lead_vol:,.0f}" if lead_vol > 0 else "n/a"
         tooltip = f"{f} | Sub Vol: {sub_vol_txt} | Lead Vol: {lead_vol_txt}"
@@ -838,6 +838,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
