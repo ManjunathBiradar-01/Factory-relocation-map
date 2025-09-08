@@ -562,7 +562,7 @@ custom_css = """
         width: 100%;
     }
     th {
-        background-color: #ffdc43;
+        background-color: grey;
         color: black;
         font-size: 16px;
         font-family: Arial;
@@ -876,6 +876,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
