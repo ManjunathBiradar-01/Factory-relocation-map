@@ -7,7 +7,7 @@ from io import BytesIO
 
 
 # --- Company Logo URL ---
-logo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1024px-React-icon.svg.png"
+logo_url = "Media.png"
 
 # --- Display Logo at Top of Main Page ---
 st.markdown(f"""
@@ -18,7 +18,7 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown(f"""
         <div style='text-align: center; margin-bottom: 20px;'>
-            <img src='{logo    </div>
+            <img src={logo    </div>
     """, unsafe_allow_html=True)
 
 
@@ -911,6 +911,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
