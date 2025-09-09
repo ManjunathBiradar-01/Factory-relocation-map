@@ -6,15 +6,6 @@ import requests
 from io import BytesIO
 
 
-
-import pandas as pd
-import numpy as np
-import folium
-import streamlit as st
-import requests
-from io import BytesIO
-
-
 # --- Custom Header Styling ---
 st.markdown(
     """
@@ -890,6 +881,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
