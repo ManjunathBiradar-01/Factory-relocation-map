@@ -50,6 +50,7 @@ st.markdown("""
             width: 100px;
             animation: moveRight 10s linear infinite;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            border-radius: 10px;
             z-index: 9999;
         }
 
@@ -60,12 +61,13 @@ st.markdown("""
         }
 
         .header-space {
-            height: 120px; /* Adjust to prevent overlap */
+            height: 120px;
         }
     </style>
 
     <div class="header-space"></div>
-    <img src="https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/SDR_DI.png" class="animated-logo
+    <img src="https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/SDR_DI.png
+""", unsafe_allow_html=True)
 
 
 # ---------- Data loader (define BEFORE calling it) ----------
@@ -921,6 +923,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
