@@ -201,7 +201,6 @@ with st.sidebar:
     selected_tile = st.selectbox("Choose Map Style", list(tile_options.keys()))
 
 # ---------- UI (updated) ----------
-st.title("Factory Production Relocation Dashboard")
 
 # Detect sales region column dynamically
 sales_region_col = find_sales_region_col(df.columns)
@@ -895,6 +894,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
