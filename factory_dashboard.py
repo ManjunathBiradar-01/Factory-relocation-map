@@ -41,6 +41,33 @@ st.markdown(
 )
 
 
+st.markdown("""
+    <style>
+        .animated-logo {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100px;
+            animation: moveRight 10s linear infinite;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }
+
+        @keyframes moveRight {
+            0% { left: -100px; }
+            50% { left: 50%; }
+            100% { left: 100%; }
+        }
+
+        .header-space {
+            height: 120px; /* Adjust to prevent overlap */
+        }
+    </style>
+
+    <div class="header-space"></div>
+    <img src="https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/SDR_DI.png" class="animated-logo
+
+
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
 def load_data(path: str) -> pd.DataFrame:
@@ -894,6 +921,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
