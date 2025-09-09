@@ -6,9 +6,7 @@ import requests
 from io import BytesIO
 
 
-
 # ---------- Custom Sidebar Background Color ----------
-
 st.markdown(
     """
     <style>
@@ -19,7 +17,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 # ---------- Custom Header Styling ----------
 st.markdown(
@@ -33,6 +30,7 @@ st.markdown(
             font-weight: bold;
             text-align: center;
             border-radius: 5px;
+            margin-bottom: 20px;
         }
     </style>
     <div class="custom-header">
@@ -897,6 +895,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
