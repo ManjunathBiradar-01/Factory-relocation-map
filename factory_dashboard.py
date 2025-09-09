@@ -7,20 +7,25 @@ from io import BytesIO
 
 
 
+import pandas as pd
+import numpy as np
+import folium
+import streamlit as st
+import requests
+from io import BytesIO
+
 # --- Company Logo URL ---
 logo_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Media.png"
 
 # --- Display Logo at Top of Main Page ---
 st.markdown(f"""
-    <div style="text-align: center;">
-        {logo_url}
-    </div>
-""", unsafe_allow_html=True)
+    <div style='text-align: center; margin-bottom: 20px;'>
+        <img src="{logo_url}" alt, unsafe_allow_html=True)
 
 # --- Display Logo at Top of Sidebar ---
 with st.sidebar:
     st.markdown(f"""
-        <div style="text-align: center;">
+        <div style='text-align: center; margin-bottom: 20px;'>
             {logo_url}
         </div>
     """, unsafe_allow_html=True)
@@ -46,7 +51,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
@@ -901,6 +905,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
