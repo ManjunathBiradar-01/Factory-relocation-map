@@ -14,7 +14,7 @@ import time
 # --- Basic Login Credentials ---
 USER_CREDENTIALS = {
     "admin": "password123",
-    "user": "factory2025"
+    "user": "BomagSDMs25"
 }
 
 SESSION_TIMEOUT_MINUTES = 15
@@ -31,7 +31,7 @@ def login():
             st.session_state["authenticated"] = True
             st.session_state["username"] = username
             st.session_state["login_time"] = time.time()
-            st.experimental_rerun()
+            st.experimental_rerun()  # 🔄 rerun to load dashboard
         else:
             st.error("Invalid username or password")
 
@@ -942,6 +942,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
