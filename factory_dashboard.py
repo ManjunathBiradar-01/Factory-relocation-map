@@ -41,21 +41,24 @@ st.markdown(
 )
 
 
+import streamlit as st
+
+# Animated image block using your GitHub PNG
 st.markdown("""
     <style>
         .animated-logo {
-            position: absolute;
+            position: fixed;
             top: 10px;
             left: 0;
             width: 100px;
-            animation: moveRight 10s linear infinite;
+            animation: moveRight 12s linear infinite;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
             border-radius: 10px;
-            z-index: 9999;
+            z-index: 10000;
         }
 
         @keyframes moveRight {
-            0% { left: -100px; }
+            0% { left: -120px; }
             50% { left: 50%; }
             100% { left: 100%; }
         }
@@ -66,7 +69,25 @@ st.markdown("""
     </style>
 
     <div class="header-space"></div>
-    <img src="https://github.com/ManjunathBiradar-01/Factory-relocation-map/blob/main/SDR_DI.png"
+    <img src="https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/SDR", unsafe_allow_html=True)
+
+# Custom header below the image
+st.markdown("""
+    <style>
+        .custom-header {
+            background-color: #0052a0;
+            color: white;
+            padding: 10px 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <div class="custom-header">
+        Bomag SDMs Factory Production Relocation Dashboard
+    </div>
 """, unsafe_allow_html=True)
 
 
@@ -923,6 +944,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
