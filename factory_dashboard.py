@@ -6,14 +6,18 @@ import requests
 from io import BytesIO
 
 
+
+# --- Company Logo URL ---
 logo_url = "https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/Media.png"
 
-# Display Logo at Top of Main Page
+# --- Display Logo at Top of Main Page ---
 st.markdown(f"""
     <div style="text-align: center;">
-        <img src="{logo_url}" alt="Company Logo" widthrue)
+        {logo_url}
+    </div>
+""", unsafe_allow_html=True)
 
-# Display Logo at Top of Sidebar
+# --- Display Logo at Top of Sidebar ---
 with st.sidebar:
     st.markdown(f"""
         <div style="text-align: center;">
@@ -21,20 +25,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-
-# ---------- Custom Sidebar Background Color ----------
-st.markdown(
-    """
-    <style>
-        [data-testid="stSidebar"] {
-            background-color: rgba(128, 128, 128, 0.2); /* 0.2 = 20% opacity */
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ---------- Custom Header Styling ----------
+# --- Custom Header Styling ---
 st.markdown(
     """
     <style>
@@ -910,6 +901,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
