@@ -11,7 +11,7 @@ st.markdown(
     """
     <style>
         [data-testid="stSidebar"] {
-            background-color: rgba(128, 128, 128, 0.9); /* 0.9 = 90% opacity */
+            background-color: rgba(128, 128, 128, 0.2); /* 0.2 = 20% opacity */
         }
     </style>
     """,
@@ -894,6 +894,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
