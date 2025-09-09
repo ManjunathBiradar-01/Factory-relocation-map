@@ -273,7 +273,7 @@ with kpi_lead:
             <div class="kpi-title">Lead Factories</div>
             <div class="kpi-value">{filtered_df["Plan Lead Factory"].nunique()}</div>
             <div class="kpi-title">Lead Volume</div>
-            <div class="kpi-value">{filtered_df['lead_vol'].sum():,.0f}</div>
+            <div class="kpi-value">{filtered_df['lead_vol'].sum()}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -283,7 +283,7 @@ with kpi_sub:
             <div class="kpi-title">Sub Factories</div>
             <div class="kpi-value">{filtered_df["Plan Sub Factory"].nunique()}</div>
             <div class="kpi-title">Sub Volume</div>
-            <div class="kpi-value">{filtered_df['sub_vol'].sum():,.0f}</div>
+            <div class="kpi-value">{filtered_df['sub_vol'].sum()}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -883,6 +883,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
