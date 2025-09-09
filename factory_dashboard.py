@@ -8,10 +8,13 @@ from io import BytesIO
 import streamlit as st
 import time
 
+import streamlit as st
+import time
+
 # --- Basic Login Credentials ---
 USER_CREDENTIALS = {
-    "admin": "ManjuFT25465",
-    "user": "BomagSDMs25"
+    "admin": "password123",
+    "user": "factory2025"
 }
 
 SESSION_TIMEOUT_MINUTES = 15
@@ -28,7 +31,7 @@ def login():
             st.session_state["authenticated"] = True
             st.session_state["username"] = username
             st.session_state["login_time"] = time.time()
-            st.success(f"Welcome, {username}!")
+            st.experimental_rerun()
         else:
             st.error("Invalid username or password")
 
@@ -939,6 +942,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
