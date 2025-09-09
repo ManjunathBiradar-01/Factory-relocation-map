@@ -8,18 +8,13 @@ from io import BytesIO
 import streamlit as st
 import time
 
-import streamlit as st
-import time
-
-# --- Basic Login Credentials ---
 USER_CREDENTIALS = {
     "admin": "password123",
-    "user": "BomagSDMs25"
+    "user": "factory2025"
 }
 
 SESSION_TIMEOUT_MINUTES = 15
 
-# --- Login Form ---
 def login():
     st.sidebar.title("Login")
     username = st.sidebar.text_input("Username")
@@ -31,19 +26,17 @@ def login():
             st.session_state["authenticated"] = True
             st.session_state["username"] = username
             st.session_state["login_time"] = time.time()
-            st.experimental_rerun()  # 🔄 rerun to load dashboard
+            st.rerun()
         else:
             st.error("Invalid username or password")
 
-# --- Logout Button ---
 def logout():
     if st.sidebar.button("Logout"):
         st.session_state["authenticated"] = False
         st.session_state.pop("username", None)
         st.session_state.pop("login_time", None)
-        st.experimental_rerun()
+        st.rerun()
 
-# --- Session Timeout Check ---
 def check_session_timeout():
     if "login_time" in st.session_state:
         elapsed_minutes = (time.time() - st.session_state["login_time"]) / 60
@@ -52,9 +45,8 @@ def check_session_timeout():
             st.session_state["authenticated"] = False
             st.session_state.pop("username", None)
             st.session_state.pop("login_time", None)
-            st.experimental_rerun()
+            st.rerun()
 
-# --- Authentication Check ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
@@ -64,7 +56,6 @@ if not st.session_state["authenticated"]:
 else:
     check_session_timeout()
     logout()
-
 
 
 # --- Custom Header Styling ---
@@ -942,6 +933,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
