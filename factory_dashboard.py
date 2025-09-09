@@ -23,11 +23,33 @@ st.markdown(
 
 
 
-# ---------- Settings ----------
+# ---------- Page Settings ----------
 st.set_page_config(
     page_title="Bomag SDMs Factory Production Relocation Dashboard",
     layout="wide"
 )
+
+# ---------- Custom Header Styling ----------
+st.markdown(
+    """
+    <style>
+        .custom-header {
+            background-color: #0052a0;
+            color: white;
+            padding: 10px 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 5px;
+        }
+    </style>
+    <div class="custom-header">
+        Bomag SDMs Factory Production Relocation Dashboard
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
@@ -883,6 +905,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
