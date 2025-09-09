@@ -43,7 +43,7 @@ st.markdown(
 
 import streamlit as st
 
-# Animated image block using your GitHub PNG
+# Inject animated PNG with shadow and rounded corners
 st.markdown("""
     <style>
         .animated-logo {
@@ -69,9 +69,10 @@ st.markdown("""
     </style>
 
     <div class="header-space"></div>
-    <img src="https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/SDR", unsafe_allow_html=True)
+    https://raw.githubusercontent.com/ManjunathBiradar-01/Factory-relocation-map/main/SDR_DI.png
+""", unsafe_allow_html=True)
 
-# Custom header below the image
+# Optional: Custom styled header below the image
 st.markdown("""
     <style>
         .custom-header {
@@ -89,7 +90,6 @@ st.markdown("""
         Bomag SDMs Factory Production Relocation Dashboard
     </div>
 """, unsafe_allow_html=True)
-
 
 # ---------- Data loader (define BEFORE calling it) ----------
 @st.cache_data(show_spinner=False)
@@ -944,6 +944,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
