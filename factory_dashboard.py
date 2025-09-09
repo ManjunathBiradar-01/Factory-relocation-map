@@ -21,14 +21,6 @@ st.markdown(
 )
 
 
-
-
-# ---------- Page Settings ----------
-st.set_page_config(
-    page_title="Bomag SDMs Factory Production Relocation Dashboard",
-    layout="wide"
-)
-
 # ---------- Custom Header Styling ----------
 st.markdown(
     """
@@ -905,6 +897,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
