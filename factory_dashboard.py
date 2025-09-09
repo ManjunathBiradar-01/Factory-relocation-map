@@ -243,7 +243,7 @@ India = "Pune, India"
 st.markdown("""
     <style>
     .kpi-card {
-        background-color: #0052a0;
+        background-color: #ffdc43;
         border-radius: 10px;
         padding: 20px;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
@@ -894,6 +894,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
