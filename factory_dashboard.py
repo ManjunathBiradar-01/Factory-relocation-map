@@ -7,7 +7,7 @@ from io import BytesIO
 
 
 # --- Company Logo URL ---
-logo_url = "Media.png"
+logo_url = Media.png
 
 # --- Display Logo at Top of Main Page ---
 st.markdown(f"""
@@ -914,6 +914,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
