@@ -5,138 +5,6 @@ import streamlit as st
 import requests
 from io import BytesIO
 
-import streamlit as st
-import json
-import os
-import time
-
-# File to store user credentials
-USER_DB_FILE = "user_db.json"
-SESSION_TIMEOUT_MINUTES = 15
-
-# Load or initialize user database
-def load_user_db():
-    if os.path.exists(USER_DB_FILE):
-        with open(USER_DB_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_user_db(db):
-    with open(USER_DB_FILE, "w") as f:
-        json.dump(db, f, indent=4)
-
-user_db = load_user_db()
-
-# Admin credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
-
-# Login
-def login():
-    st.sidebar.title("Login")
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    login_button = st.sidebar.button("Login")
-
-    if login_button:
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            st.session_state["authenticated"] = True
-            st.session_state["is_admin"] = True
-            st.session_state["username"] = username
-            st.session_state["login_time"] = time.time()
-            st.rerun()
-        elif username in user_db and user_db[username]["password"] == password:
-            if user_db[username]["approved"]:
-                st.session_state["authenticated"] = True
-                st.session_state["is_admin"] = False
-                st.session_state["username"] = username
-                st.session_state["login_time"] = time.time()
-                st.rerun()
-            else:
-                st.error("Your account is pending admin approval.")
-        else:
-            st.error("Invalid username or password")
-
-# Register
-def register():
-    st.sidebar.title("Register")
-    new_username = st.sidebar.text_input("New Username")
-    new_password = st.sidebar.text_input("New Password", type="password")
-    register_button = st.sidebar.button("Register")
-
-    if register_button:
-        if new_username in user_db:
-            st.error("Username already exists.")
-        else:
-            user_db[new_username] = {"password": new_password, "approved": False}
-            save_user_db(user_db)
-            st.success("Registration successful. Awaiting admin approval.")
-
-# Admin Panel
-def admin_panel():
-    st.sidebar.title("Admin Panel")
-    for user, info in user_db.items():
-        if not info["approved"]:
-            if st.sidebar.button(f"Approve {user}"):
-                user_db[user]["approved"] = True
-                save_user_db(user_db)
-                st.sidebar.success(f"Approved {user}")
-
-# Change Password
-def change_password():
-    st.sidebar.title("Change Password")
-    current_password = st.sidebar.text_input("Current Password", type="password")
-    new_password = st.sidebar.text_input("New Password", type="password")
-    change_button = st.sidebar.button("Change Password")
-
-    if change_button:
-        username = st.session_state.get("username")
-        if username in user_db and user_db[username]["password"] == current_password:
-            user_db[username]["password"] = new_password
-            save_user_db(user_db)
-            st.sidebar.success("Password changed successfully.")
-        else:
-            st.sidebar.error("Current password is incorrect.")
-
-# Logout
-def logout():
-    if st.sidebar.button("Logout"):
-        st.session_state["authenticated"] = False
-        st.session_state.pop("username", None)
-        st.session_state.pop("login_time", None)
-        st.session_state.pop("is_admin", None)
-        st.rerun()
-
-# Session Timeout
-def check_session_timeout():
-    if "login_time" in st.session_state:
-        elapsed_minutes = (time.time() - st.session_state["login_time"]) / 60
-        if elapsed_minutes > SESSION_TIMEOUT_MINUTES:
-            st.warning("Session expired due to inactivity.")
-            st.session_state["authenticated"] = False
-            st.session_state.pop("username", None)
-            st.session_state.pop("login_time", None)
-            st.session_state.pop("is_admin", None)
-            st.rerun()
-
-# Initialize session state
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-
-# Main logic
-if not st.session_state["authenticated"]:
-    login()
-    register()
-    st.stop()
-else:
-    check_session_timeout()
-    logout()
-    change_password()
-    if st.session_state.get("is_admin"):
-        admin_panel()
-
-st.write(f"Welcome, {st.session_state['username']}! You are logged in.")
-
 
 # --- Custom Header Styling ---
 st.markdown(
@@ -1013,6 +881,140 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
+
+import streamlit as st
+import json
+import os
+import time
+
+# File to store user credentials
+USER_DB_FILE = "user_db.json"
+SESSION_TIMEOUT_MINUTES = 15
+
+# Load or initialize user database
+def load_user_db():
+    if os.path.exists(USER_DB_FILE):
+        with open(USER_DB_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_user_db(db):
+    with open(USER_DB_FILE, "w") as f:
+        json.dump(db, f, indent=4)
+
+user_db = load_user_db()
+
+# Admin credentials
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "admin123"
+
+# Login
+def login():
+    st.sidebar.title("Login")
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
+    login_button = st.sidebar.button("Login")
+
+    if login_button:
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            st.session_state["authenticated"] = True
+            st.session_state["is_admin"] = True
+            st.session_state["username"] = username
+            st.session_state["login_time"] = time.time()
+            st.rerun()
+        elif username in user_db and user_db[username]["password"] == password:
+            if user_db[username]["approved"]:
+                st.session_state["authenticated"] = True
+                st.session_state["is_admin"] = False
+                st.session_state["username"] = username
+                st.session_state["login_time"] = time.time()
+                st.rerun()
+            else:
+                st.error("Your account is pending admin approval.")
+        else:
+            st.error("Invalid username or password")
+
+# Register
+def register():
+    st.sidebar.title("Register")
+    new_username = st.sidebar.text_input("New Username")
+    new_password = st.sidebar.text_input("New Password", type="password")
+    register_button = st.sidebar.button("Register")
+
+    if register_button:
+        if new_username in user_db:
+            st.error("Username already exists.")
+        else:
+            user_db[new_username] = {"password": new_password, "approved": False}
+            save_user_db(user_db)
+            st.success("Registration successful. Awaiting admin approval.")
+
+# Admin Panel
+def admin_panel():
+    st.sidebar.title("Admin Panel")
+    for user, info in user_db.items():
+        if not info["approved"]:
+            if st.sidebar.button(f"Approve {user}"):
+                user_db[user]["approved"] = True
+                save_user_db(user_db)
+                st.sidebar.success(f"Approved {user}")
+
+# Change Password
+def change_password():
+    st.sidebar.title("Change Password")
+    current_password = st.sidebar.text_input("Current Password", type="password")
+    new_password = st.sidebar.text_input("New Password", type="password")
+    change_button = st.sidebar.button("Change Password")
+
+    if change_button:
+        username = st.session_state.get("username")
+        if username in user_db and user_db[username]["password"] == current_password:
+            user_db[username]["password"] = new_password
+            save_user_db(user_db)
+            st.sidebar.success("Password changed successfully.")
+        else:
+            st.sidebar.error("Current password is incorrect.")
+
+# Logout
+def logout():
+    if st.sidebar.button("Logout"):
+        st.session_state["authenticated"] = False
+        st.session_state.pop("username", None)
+        st.session_state.pop("login_time", None)
+        st.session_state.pop("is_admin", None)
+        st.rerun()
+
+# Session Timeout
+def check_session_timeout():
+    if "login_time" in st.session_state:
+        elapsed_minutes = (time.time() - st.session_state["login_time"]) / 60
+        if elapsed_minutes > SESSION_TIMEOUT_MINUTES:
+            st.warning("Session expired due to inactivity.")
+            st.session_state["authenticated"] = False
+            st.session_state.pop("username", None)
+            st.session_state.pop("login_time", None)
+            st.session_state.pop("is_admin", None)
+            st.rerun()
+
+# Initialize session state
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+# Main logic
+if not st.session_state["authenticated"]:
+    login()
+    register()
+    st.stop()
+else:
+    check_session_timeout()
+    logout()
+    change_password()
+    if st.session_state.get("is_admin"):
+        admin_panel()
+
+st.write(f"Welcome, {st.session_state['username']}! You are logged in.")
+
 
 
 
