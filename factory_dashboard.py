@@ -123,20 +123,22 @@ def check_session_timeout():
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
-# Main logic
+# Show login and register if not authenticated
 if not st.session_state["authenticated"]:
     login()
     register()
+    change_password()  # ✅ Now available before login
     st.stop()
 else:
     check_session_timeout()
     logout()
-    change_password()
+
+    # ✅ Show only username at the top after login
+    st.markdown(f"### 👋 Welcome, **{st.session_state['username']}**")
+
+    # ✅ Admin panel is optional — only show if needed
     if st.session_state.get("is_admin"):
         admin_panel()
-
-st.write(f"Welcome, {st.session_state['username']}! You are logged in.")
-
 
 
 
@@ -1015,6 +1017,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
