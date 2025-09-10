@@ -28,10 +28,10 @@ user_db = load_user_db()
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
 
-# Unified login/register interface
-def login_register():
+# Unified login/register/change password interface
+def login_register_change():
     st.sidebar.title("User Access")
-    mode = st.sidebar.radio("Select Mode", ["Login", "Register"])
+    mode = st.sidebar.radio("Select Mode", ["Login", "Register", "Change Password"])
 
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
@@ -65,6 +65,16 @@ def login_register():
                 save_user_db(user_db)
                 st.success("Registration successful. Awaiting admin approval.")
 
+    elif mode == "Change Password":
+        new_password = st.sidebar.text_input("New Password", type="password")
+        if st.sidebar.button("Change Password"):
+            if username in user_db and user_db[username]["password"] == password:
+                user_db[username]["password"] = new_password
+                save_user_db(user_db)
+                st.sidebar.success("Password changed successfully.")
+            else:
+                st.sidebar.error("Invalid username or current password.")
+
 # Admin approval panel
 def admin_panel():
     st.sidebar.title("Admin Panel")
@@ -74,20 +84,6 @@ def admin_panel():
                 user_db[user]["approved"] = True
                 save_user_db(user_db)
                 st.sidebar.success(f"Approved {user}")
-
-# Password change function
-def change_password():
-    st.sidebar.title("Change Password")
-    current_password = st.sidebar.text_input("Current Password", type="password")
-    new_password = st.sidebar.text_input("New Password", type="password")
-    if st.sidebar.button("Change Password"):
-        username = st.session_state.get("username")
-        if username in user_db and user_db[username]["password"] == current_password:
-            user_db[username]["password"] = new_password
-            save_user_db(user_db)
-            st.sidebar.success("Password changed successfully.")
-        else:
-            st.sidebar.error("Current password is incorrect.")
 
 # Logout function
 def logout():
@@ -116,12 +112,11 @@ if "authenticated" not in st.session_state:
 
 # Main logic
 if not st.session_state["authenticated"]:
-    login_register()
+    login_register_change()
     st.stop()
 else:
     check_session_timeout()
     logout()
-    change_password()
     if st.session_state.get("is_admin"):
         admin_panel()
 
@@ -1003,6 +998,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
