@@ -120,7 +120,7 @@ else:
     if st.session_state.get("is_admin"):
         admin_panel()
 
-st.sidebar.markdown(f"**{st.session_state['username']}`")
+st.sidebar.markdown(f"""{st.session_state['username']}""")
 
 
 # --- Custom Header Styling ---
@@ -998,6 +998,7 @@ with st.expander("Show filtered data"):
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
