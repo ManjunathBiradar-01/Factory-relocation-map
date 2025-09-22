@@ -991,13 +991,13 @@ with st.expander("Show filtered data"):
         "Plan Lead Factory",
         "Lead Factory Location",   # <--- added
         "Volume Lead Plant (%)",
-        "Lat_today","Lon_today","Lat_lead","Lon_lead"
     ]
 
     # Only keep columns that actually exist (robust)
     cols_to_show = [c for c in cols_to_show if c in filtered_df.columns]
 
     st.dataframe(filtered_df[cols_to_show].reset_index(drop=True)) 
+
 
 
 
